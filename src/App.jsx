@@ -18,13 +18,12 @@ import RespondentsDetailPage from './pages/admin/RespondentsDetailPage';
 
 import HomePage from './pages/respondent/HomePage';
 import RespLayout from './components/layout/RespLayout';
+import FaqPage from './pages/respondent/FaqPage';
+import GuidelinePage from './pages/respondent/GuidelinePage';
 
 {/*}
 // respondent pages
-import HomePage from './pages/respondent/HomePage';
 import SurveyPage from './pages/respondent/SurveyPage';
-import GuidelinePage from './pages/respondent/GuidelinePage';
-import FaqPage from './pages/respondent/FaqPage';
 */}
 
 function App() {
@@ -42,10 +41,10 @@ function App() {
         {/* respondent routes */}
         <Route element={<RespLayout />}>
           <Route path="/" element={<HomePage />} />
+          <Route path="/guideline" element={<GuidelinePage />} />
+          <Route path="/faq" element={<FaqPage />} />
           {/*
           <Route path="/survey/:id" element={<SurveyPage />} />
-          <Route path="/faq" element={<FaqPage />} />
-          <Route path="/guideline" element={<GuidelinePage />} />
           */}
         </Route>
 

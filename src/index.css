@@ -6,7 +6,7 @@ body {
   margin: 0;
   padding: 0;
   font-family: "Montserrat", sans-serif;
-  background-color: #f0f4f8;
+  background-color: #FFFCF4;
 }
 
 #root {
@@ -24,6 +24,7 @@ body {
   --color-ash: #2B2B2B;
   --color-light-grey: #E7E4DC;
   --color-white: #FFFFFF;
+  --color-broken-white: #FFFCF4;
   --color-butter: #F5E8C6;
   --color-caramel: #AB924F;
 }

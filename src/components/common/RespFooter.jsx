@@ -33,10 +33,10 @@ const socialLinks = [
 
 const RespFooter = () => {
     return (
-        <footer className="mt-20">
+        <footer>
 
             {/* Top Footer */}
-            <div className="bg-oren px-5 py-10 text-center text-white">
+            <div className="bg-oren-muda px-5 py-10 text-center text-white">
                 <div className="mx-auto max-w-5xl">
                     <h3 className="mb-6 text-2xl font-semibold">
                         Follow us
