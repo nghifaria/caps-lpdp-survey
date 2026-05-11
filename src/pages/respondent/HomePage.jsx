@@ -1,15 +1,11 @@
-import RespNavbar from "../../components/common/RespNavbar";
+import RespLayout from "../../components/layout/RespLayout";
 
 const HomePage = () => {
-  return (
-    <>
-      <RespNavbar />
-
-      <div>
-        HOME PAGE
-      </div>
-    </>
-  );
+    return (
+        <div>
+            HOME PAGE
+        </div>
+    );
 };
 
 export default HomePage;

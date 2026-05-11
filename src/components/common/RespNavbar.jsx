@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-
 import logo from "../../assets/logo_lpdp.png";
 
 const RespNavbar = () => {
@@ -17,12 +16,12 @@ const RespNavbar = () => {
     const navLinkClass = ({ isActive }) =>
         `
         transition-colors duration-300 font-medium
-        hover:text-[#ED722E]
-        ${isActive ? "text-[#ED722E]" : "text-black"}
+        hover:text-oren-muda
+        ${isActive ? "text-oren-muda" : "text-black"}
     `;
 
     return (
-        <nav className="sticky top-0 z-50 bg-[#E7E4DC] shadow-md">
+        <nav className="sticky top-0 z-50 bg-light-grey shadow-md">
             <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5">
 
                 {/* Logo */}
@@ -73,12 +72,12 @@ const RespNavbar = () => {
 
             {/* Mobile Menu */}
             {isMenuOpen && (
-                <div className="flex flex-col bg-[#E7E4DC] px-4 pb-4 md:hidden">
+                <div className="flex flex-col bg-light-grey px-4 pb-4 md:hidden">
                     <NavLink
                         to="/"
                         className={({ isActive }) =>
-                            `py-3 font-medium transition-colors duration-300 hover:text-[#ED722E]
-                            ${isActive ? "text-[#ED722E]" : "text-black"}`
+                            `py-3 font-medium transition-colors duration-300 hover:text-oren-muda
+                            ${isActive ? "text-oren-muda" : "text-black"}`
                         }
                         onClick={closeMenu}
                     >
@@ -88,8 +87,8 @@ const RespNavbar = () => {
                     <NavLink
                         to="/faq"
                         className={({ isActive }) =>
-                            `py-3 font-medium transition-colors duration-300 hover:text-[#ED722E]
-                            ${isActive ? "text-[#ED722E]" : "text-black"}`
+                            `py-3 font-medium transition-colors duration-300 hover:text-oren-muda
+                            ${isActive ? "text-oren-muda" : "text-black"}`
                         }
                         onClick={closeMenu}
                     >
@@ -99,8 +98,8 @@ const RespNavbar = () => {
                     <NavLink
                         to="/guideline"
                         className={({ isActive }) =>
-                            `py-3 font-medium transition-colors duration-300 hover:text-[#ED722E]
-                            ${isActive ? "text-[#ED722E]" : "text-black"}`
+                            `py-3 font-medium transition-colors duration-300 hover:text-oren-muda
+                            ${isActive ? "text-oren-muda" : "text-black"}`
                         }
                         onClick={closeMenu}
                     >

@@ -17,6 +17,7 @@ import RespondentsDetailPage from './pages/admin/RespondentsDetailPage';
 */}
 
 import HomePage from './pages/respondent/HomePage';
+import RespLayout from './components/layout/RespLayout';
 
 {/*}
 // respondent pages
@@ -39,12 +40,14 @@ function App() {
         */}
 
         {/* respondent routes */}
-        <Route path="/" element={<HomePage />} />
-        {/*
-        <Route path="/survey/:id" element={<SurveyPage />} />
-        <Route path="/faq" element={<FaqPage />} />
-        <Route path="/guideline" element={<GuidelinePage />} />
-        */}
+        <Route element={<RespLayout />}>
+          <Route path="/" element={<HomePage />} />
+          {/*
+          <Route path="/survey/:id" element={<SurveyPage />} />
+          <Route path="/faq" element={<FaqPage />} />
+          <Route path="/guideline" element={<GuidelinePage />} />
+          */}
+        </Route>
 
         {/* admin routes */}
         {/*
