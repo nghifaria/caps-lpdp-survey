@@ -5,9 +5,11 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import SignUpPage from './pages/auth/SignUpPage';
 */}
 
+import AdminLayout from './components/layout/AdminLayout';
+import DashboardPage from './pages/admin/DashboardPage';
+
 {/*
 // admin pages
-import DashboardPage from './pages/admin/DashboardPage';
 import CreateSurvey from './pages/admin/CreateSurvey';
 import ReportsPage from './pages/admin/ReportsPage';
 import SurveyListPage from './pages/admin/SurveyListPage';
@@ -15,16 +17,12 @@ import SurveyDetailPage from './pages/admin/SurveyDetailPage';
 import RespondentsPage from './pages/admin/RespondentsPage';
 import RespondentsDetailPage from './pages/admin/RespondentsDetailPage';
 */}
-
-import HomePage from './pages/respondent/HomePage';
+// respondent pages
 import RespLayout from './components/layout/RespLayout';
+import HomePage from './pages/respondent/HomePage';
 import FaqPage from './pages/respondent/FaqPage';
 import GuidelinePage from './pages/respondent/GuidelinePage';
-
-{/*}
-// respondent pages
 import SurveyPage from './pages/respondent/SurveyPage';
-*/}
 
 function App() {
   return (
@@ -43,12 +41,13 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/guideline" element={<GuidelinePage />} />
           <Route path="/faq" element={<FaqPage />} />
-          {/*
-          <Route path="/survey/:id" element={<SurveyPage />} />
-          */}
+          <Route path="/survey/:id" element={<SurveyPage />} />          
         </Route>
 
         {/* admin routes */}
+        <Route element={<AdminLayout />}>
+          <Route path="/admin" element={<DashboardPage />} />
+        </Route>
         {/*
         <Route element={<AdminLayout />}>
           <Route path="/admin" element={<DashboardPage />} />
