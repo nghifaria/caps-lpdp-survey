@@ -38,4 +38,4 @@ src/
 ├── lib/            # Supabase config & external tools
 ├── pages/          # Full page views (Landing, Admin, Survey)
 ├── types/          # Strict TypeScript interfaces
-└── supabase/       # SQL Migrations & Database Seeding
+└── supabase/       # SQL Migrations & Database Seeding 
