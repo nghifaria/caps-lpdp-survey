@@ -1,41 +1,73 @@
-# caps-lpdp-survey
-# caps-lpdp-survey
-# LPDP Awardee Satisfaction Platform (Survey Insight)
+# React + TypeScript + Vite
 
-Platform kuesioner mandiri berbasis web untuk mengukur tingkat kepuasan awardee LPDP menggunakan metode **Importance-Performance Analysis (IPA)**. Proyek ini dibangun untuk menggantikan ketergantungan pada platform survei pihak ketiga.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## 🛠 Tech Stack (2026 Standard)
-- **Frontend**: React 19 + Vite + TypeScript
-- **Styling**: Tailwind CSS (LPDP Theme: Navy #003366 & Orange #F97316)
-- **Backend as a Service (BaaS)**: Supabase (Auth, PostgreSQL, Storage)
-- **State Management**: TanStack Query (React Query)
-- **AI Agent-Based Development**: Optimized for Google Antigravity & OpenAI Codex
+Currently, two official plugins are available:
 
-## 🧠 Core Principles (Karpathy's Vibecoding)
-Proyek ini mengikuti pedoman perilaku yang ketat untuk mengurangi kesalahan koding AI:
-1. **Think Before Coding**: Selalu buat rencana implementasi sebelum menulis baris kode.
-2. **Simplicity First**: Jangan tambahkan fitur spekulatif. Minimal kode untuk hasil maksimal.
-3. **Surgical Changes**: Edit hanya bagian yang diperlukan. Jangan merombak kode tetangga tanpa izin.
-4. **Goal-Driven Execution**: Setiap perubahan harus memiliki kriteria keberhasilan yang dapat diverifikasi.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## 🎯 Project Scope
-- **Responden**: Pengisian kuesioner dinamis dengan *branching logic* (Smart Form).
-- **Admin**: Dashboard analitik dengan visualisasi Matriks IPA interaktif.
-- **Data**: Ekspor hasil survei ke format CSV yang siap diolah.
-- **Security**: Row Level Security (RLS) di Supabase untuk perlindungan data.
+## React Compiler
 
-## 📊 Analytics Methodology (IPA)
-Perhitungan kuadran didasarkan pada skor rata-rata:
-- **Kepuasan (Performance)**: $\bar{X} = \frac{\sum X_i}{n}$
-- **Kepentingan (Importance)**: $\bar{Y} = \frac{\sum Y_i}{n}$
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## 📂 Directory Structure
-```text
-src/
-├── assets/         # Images, LPDP Logos, Fonts
-├── components/     # Reusable UI Components
-├── hooks/          # Custom hooks (fetching, auth)
-├── lib/            # Supabase config & external tools
-├── pages/          # Full page views (Landing, Admin, Survey)
-├── types/          # Strict TypeScript interfaces
-└── supabase/       # SQL Migrations & Database Seeding 
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
+
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
