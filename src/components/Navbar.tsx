@@ -2,6 +2,7 @@ const navItems = [
   { label: 'Home', href: '#' },
   { label: 'FAQ', href: '#faq' },
   { label: 'Guideline', href: '#guideline' },
+  { label: 'Admin', href: '/admin/login' },
 ]
 
 function Navbar() {
