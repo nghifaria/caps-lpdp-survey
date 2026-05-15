@@ -4,11 +4,12 @@ import { Navigate } from 'react-router-dom'
 type ProtectedRouteProps = {
   session: unknown | null
   children: ReactNode
+  redirectTo?: string
 }
 
-function ProtectedRoute({ session, children }: ProtectedRouteProps) {
+function ProtectedRoute({ session, children, redirectTo = '/admin/login' }: ProtectedRouteProps) {
   if (!session) {
-    return <Navigate to="/admin/login" replace />
+    return <Navigate to={redirectTo} replace />
   }
 
   return children

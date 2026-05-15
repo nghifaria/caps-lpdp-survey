@@ -1,0 +1,210 @@
+import { useEffect, useMemo, useState } from 'react'
+import { supabase } from '../lib/supabase'
+import type { Database } from '../types/database'
+
+const avatarBucket = 'avatars'
+
+type ProfileRow = Database['public']['Tables']['profiles']['Row']
+
+function Profile() {
+  const [fullName, setFullName] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
+  const [file, setFile] = useState<File | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadProfile() {
+      setLoading(true)
+      setError(null)
+
+      const { data: authData } = await supabase.auth.getUser()
+      const user = authData.user
+
+      if (!user) {
+        if (!cancelled) {
+          setError('User belum login.')
+          setLoading(false)
+        }
+        return
+      }
+
+      const { data, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url, updated_at')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (cancelled) {
+        return
+      }
+
+      if (profileError) {
+        setError(profileError.message)
+        setLoading(false)
+        return
+      }
+
+      if (data) {
+        const profileData = data as ProfileRow
+        setFullName(profileData.full_name ?? '')
+        setAvatarUrl(profileData.avatar_url ?? '')
+      }
+
+      setLoading(false)
+    }
+
+    void loadProfile()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const previewUrl = useMemo(() => {
+    if (file) {
+      return URL.createObjectURL(file)
+    }
+
+    return avatarUrl
+  }, [avatarUrl, file])
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSaving(true)
+    setError(null)
+    setSuccess(null)
+
+    const { data: authData } = await supabase.auth.getUser()
+    const user = authData.user
+
+    if (!user) {
+      setError('User belum login.')
+      setSaving(false)
+      return
+    }
+
+    let nextAvatarUrl = avatarUrl
+
+    if (file) {
+      const fileExt = file.name.split('.').pop() ?? 'jpg'
+      const filePath = `${user.id}/${Date.now()}.${fileExt}`
+      const uploadResult = await supabase.storage.from(avatarBucket).upload(filePath, file, {
+        upsert: true,
+      })
+
+      if (uploadResult.error) {
+        setError(uploadResult.error.message)
+        setSaving(false)
+        return
+      }
+
+      const { data: publicUrlData } = supabase.storage.from(avatarBucket).getPublicUrl(filePath)
+      nextAvatarUrl = publicUrlData.publicUrl
+    }
+
+    const { error: updateError } = await (supabase.from('profiles') as any).upsert({
+      id: user.id,
+      full_name: fullName,
+      avatar_url: nextAvatarUrl,
+      updated_at: new Date().toISOString(),
+    })
+
+    if (updateError) {
+      setError(updateError.message)
+      setSaving(false)
+      return
+    }
+
+    setAvatarUrl(nextAvatarUrl)
+    setFile(null)
+    setSuccess('Profil berhasil diperbarui.')
+    setSaving(false)
+  }
+
+  return (
+    <main className="min-h-screen bg-[linear-gradient(180deg,_#eef4fb_0%,_#ffffff_100%)] px-4 py-10 text-slate-900 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-4xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(0,51,102,0.08)] sm:p-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
+          Profile Management
+        </p>
+        <h1 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-[#003366] sm:text-4xl">
+          Profil Awardee
+        </h1>
+
+        {loading ? (
+          <p className="mt-6 text-sm text-slate-600">Memuat profil...</p>
+        ) : error ? (
+          <p className="mt-6 text-sm text-red-600">{error}</p>
+        ) : (
+          <form className="mt-8 grid gap-8 lg:grid-cols-[0.8fr_1.2fr]" onSubmit={handleSubmit}>
+            <div className="space-y-4">
+              <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-5 text-center">
+                <div className="mx-auto flex h-40 w-40 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#003366]/5 shadow-[0_16px_40px_rgba(0,51,102,0.12)]">
+                  {previewUrl ? (
+                    <img src={previewUrl} alt="Preview avatar" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-sm font-semibold uppercase tracking-[0.2em] text-[#003366]">
+                      Avatar
+                    </span>
+                  )}
+                </div>
+                <label className="mt-5 block text-sm font-medium text-slate-700" htmlFor="avatar-file">
+                  Unggah foto profil
+                </label>
+                <input
+                  id="avatar-file"
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <label className="text-sm font-medium text-slate-700" htmlFor="full-name">
+                  Full Name
+                </label>
+                <input
+                  id="full-name"
+                  type="text"
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                />
+              </div>
+
+              {success ? (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                  {success}
+                </div>
+              ) : null}
+
+              {error ? (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {error}
+                </div>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.28)] transition hover:-translate-y-0.5 hover:bg-[#ff8a3d] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+              >
+                {saving ? 'Menyimpan...' : 'Simpan Profil'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </main>
+  )
+}
+
+export default Profile

@@ -39,6 +39,13 @@ export interface AnswerRow {
   reason: string | null;
 }
 
+export interface ProfileRow {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -109,6 +116,21 @@ export interface Database {
           score_performance?: number | null;
           score_importance?: number | null;
           reason?: string | null;
+        };
+        Relationships: [];
+      };
+      profiles: {
+        Row: ProfileRow;
+        Insert: {
+          id: string;
+          full_name?: string | null;
+          avatar_url?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          full_name?: string | null;
+          avatar_url?: string | null;
+          updated_at?: string;
         };
         Relationships: [];
       };
