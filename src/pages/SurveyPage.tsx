@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { supabase } from '../lib/supabase'
 import type { Database } from '../types/database'
 
@@ -67,6 +68,7 @@ function SurveyPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const isSurveyActive = survey?.is_active ?? false
 
   function updateAnswer(questionId: string, patch: Partial<AnswerDraft>) {
     setAnswers((current) => {
@@ -113,8 +115,9 @@ function SurveyPage() {
           type="text"
           value={answer.textValue}
           onChange={(event) => updateAnswer(question.id, { textValue: event.target.value })}
+          disabled={!isSurveyActive}
           placeholder="Tulis jawaban di sini"
-          className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+          className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10 disabled:cursor-not-allowed disabled:bg-slate-100"
         />
       )
     }
@@ -126,7 +129,8 @@ function SurveyPage() {
         <select
           value={answer.textValue}
           onChange={(event) => updateAnswer(question.id, { textValue: event.target.value })}
-          className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+          disabled={!isSurveyActive}
+          className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10 disabled:cursor-not-allowed disabled:bg-slate-100"
         >
           <option value="">Pilih salah satu provinsi</option>
           {options.map((option) => (
@@ -171,7 +175,8 @@ function SurveyPage() {
                     onChange={() =>
                       updateAnswer(question.id, { scoreImportance: String(value) })
                     }
-                    className="h-4 w-4 border-slate-300 text-[#F97316] focus:ring-[#F97316]"
+                    disabled={!isSurveyActive}
+                    className="h-4 w-4 border-slate-300 text-[#F97316] focus:ring-[#F97316] disabled:cursor-not-allowed"
                   />
                 </label>
               ))}
@@ -194,7 +199,8 @@ function SurveyPage() {
                     onChange={() =>
                       updateAnswer(question.id, { scorePerformance: String(value) })
                     }
-                    className="h-4 w-4 border-slate-300 text-[#F97316] focus:ring-[#F97316]"
+                    disabled={!isSurveyActive}
+                    className="h-4 w-4 border-slate-300 text-[#F97316] focus:ring-[#F97316] disabled:cursor-not-allowed"
                   />
                 </label>
               ))}
@@ -210,10 +216,11 @@ function SurveyPage() {
                 id={`reason-${question.id}`}
                 value={answer.reason}
                 onChange={(event) => updateAnswer(question.id, { reason: event.target.value })}
+                  disabled={!isSurveyActive}
                 required
                 rows={4}
                 placeholder="Jelaskan singkat alasan skor kepuasan di bawah 3"
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10 disabled:cursor-not-allowed disabled:bg-slate-100"
               />
             </div>
           ) : null}
@@ -228,6 +235,11 @@ function SurveyPage() {
     event.preventDefault()
 
     if (!survey) {
+      return
+    }
+
+    if (!isSurveyActive) {
+      setSubmitError('Survei sudah ditutup dan tidak dapat menerima jawaban baru.')
       return
     }
 
@@ -406,7 +418,7 @@ function SurveyPage() {
         </p>
 
         {loading ? (
-          <p className="mt-6 text-sm text-slate-600">Memuat data survey...</p>
+          <LoadingSpinner />
         ) : error ? (
           <p className="mt-6 text-sm text-red-600">{error}</p>
         ) : (
@@ -415,9 +427,27 @@ function SurveyPage() {
               {survey?.title}
             </h1>
 
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
+                  isSurveyActive
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : 'bg-red-50 text-red-700'
+                }`}
+              >
+                {isSurveyActive ? 'Survei Aktif' : 'Survei Ditutup'}
+              </span>
+            </div>
+
             <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
               Isi pertanyaan berikut untuk membantu kami membaca pengalaman layanan LPDP secara lebih akurat.
             </p>
+
+            {!isSurveyActive ? (
+              <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Periode survei sudah ditutup. Jawaban baru tidak dapat dikirim.
+              </div>
+            ) : null}
 
             {submitError ? (
               <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -459,15 +489,17 @@ function SurveyPage() {
               ))}
             </section>
 
-            <div className="mt-8 flex items-center justify-end">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.35)] transition hover:-translate-y-0.5 hover:bg-[#ff8a3d] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-              >
-                {submitting ? 'Mengirim...' : 'Submit Jawaban'}
-              </button>
-            </div>
+            {isSurveyActive ? (
+              <div className="mt-8 flex items-center justify-end">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.35)] transition hover:-translate-y-0.5 hover:bg-[#ff8a3d] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                >
+                  {submitting ? 'Mengirim...' : 'Submit Jawaban'}
+                </button>
+              </div>
+            ) : null}
           </form>
         )}
       </div>

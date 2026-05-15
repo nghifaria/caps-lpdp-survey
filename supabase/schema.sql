@@ -50,6 +50,13 @@ create policy "surveys_select_public"
   to anon, authenticated
   using (true);
 
+create policy "surveys_update_authenticated"
+  on public.surveys
+  for update
+  to authenticated
+  using (true)
+  with check (true);
+
 create policy "questions_select_public"
   on public.questions
   for select
@@ -79,3 +86,16 @@ create policy "answers_insert_public"
   for insert
   to anon, authenticated
   with check (true);
+
+create or replace function public.get_survey_response_count(survey_uuid uuid)
+returns bigint
+language sql
+security definer
+set search_path = public
+as $$
+  select count(*)::bigint
+  from public.responses
+  where survey_id = survey_uuid;
+$$;
+
+grant execute on function public.get_survey_response_count(uuid) to anon, authenticated;

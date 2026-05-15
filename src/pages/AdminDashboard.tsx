@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { supabase } from '../lib/supabase'
 import type { Database } from '../types/database'
 
@@ -27,6 +28,8 @@ type ResponseWithAnswers = ResponseRow & {
 
 type CsvRow = {
   response_id: string
+  submitted_at: string
+  question_id: string
   question_text: string
   performance: number
   importance: number
@@ -45,6 +48,7 @@ function AdminDashboard() {
   const [survey, setSurvey] = useState<SurveyRow | null>(null)
   const [responses, setResponses] = useState<ResponseWithAnswers[]>([])
   const [loading, setLoading] = useState(true)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -128,6 +132,8 @@ function AdminDashboard() {
 
         rawRows.push({
           response_id: response.id,
+          submitted_at: response.submitted_at,
+          question_id: answer.question_id,
           question_text: questionText,
           performance,
           importance,
@@ -191,19 +197,61 @@ function AdminDashboard() {
     }
   }, [responses])
 
+  const quadrantMap = useMemo(
+    () => new Map(ipaPoints.map((point) => [point.question_id, point.quadrant])),
+    [ipaPoints],
+  )
+
+  async function toggleSurveyStatus() {
+    if (!survey) {
+      return
+    }
+
+    setUpdatingStatus(true)
+    setError(null)
+
+    const nextStatus = !survey.is_active
+
+    const updateResult = await (supabase.from('surveys') as any)
+      .update({ is_active: nextStatus })
+      .eq('id', survey.id)
+      .select('id, title, is_active, created_at')
+      .single()
+
+    if (updateResult.error || !updateResult.data) {
+      setError(updateResult.error?.message ?? 'Gagal memperbarui status survei.')
+      setUpdatingStatus(false)
+      return
+    }
+
+    setSurvey(updateResult.data as SurveyRow)
+    setUpdatingStatus(false)
+  }
+
   function exportCsv() {
     const rows = csvRows.map((row) =>
-      [row.response_id, row.question_text, row.performance, row.importance, row.reason]
+      [
+        row.response_id,
+        row.submitted_at,
+        row.question_text,
+        row.performance,
+        row.importance,
+        row.reason,
+        quadrantMap.get(row.question_id) ?? '-',
+      ]
         .map((value) => `"${String(value).replaceAll('"', '""')}"`)
         .join(','),
     )
 
-    const csv = ['response_id,question_text,performance,importance,reason', ...rows].join('\n')
+    const csv = [
+      '\ufeffresponse_id,submitted_at,question_text,performance,importance,reason,quadrant',
+      ...rows,
+    ].join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'ipa-raw-data.csv'
+    link.download = `survei-lpdp-${new Date().toISOString().split('T')[0]}.csv`
     link.click()
     URL.revokeObjectURL(url)
   }
@@ -244,10 +292,27 @@ function AdminDashboard() {
                 </p>
               </div>
             </div>
+
+            <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
+              {survey ? (
+                <button
+                  type="button"
+                  onClick={toggleSurveyStatus}
+                  disabled={updatingStatus}
+                  className="inline-flex items-center justify-center rounded-full border border-[#003366] bg-[#003366] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0a447f] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {updatingStatus
+                    ? 'Memperbarui...'
+                    : survey.is_active
+                      ? 'Tutup Survei'
+                      : 'Buka Survei'}
+                </button>
+              ) : null}
+            </div>
           </div>
 
           {loading ? (
-            <p className="mt-8 text-sm text-slate-600">Memuat data dashboard...</p>
+            <LoadingSpinner />
           ) : error ? (
             <p className="mt-8 text-sm text-red-600">{error}</p>
           ) : (
@@ -317,20 +382,26 @@ function AdminDashboard() {
                       <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500">
                         <tr>
                           <th className="px-4 py-3">Response ID</th>
+                          <th className="px-4 py-3">Submitted At</th>
                           <th className="px-4 py-3">Question</th>
                           <th className="px-4 py-3">Performance</th>
                           <th className="px-4 py-3">Importance</th>
                           <th className="px-4 py-3">Reason</th>
+                          <th className="px-4 py-3">Quadrant</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
                         {csvRows.map((row) => (
                           <tr key={`${row.response_id}-${row.question_text}`}>
                             <td className="px-4 py-3 text-slate-600">{row.response_id}</td>
+                            <td className="px-4 py-3 text-slate-600">{row.submitted_at}</td>
                             <td className="px-4 py-3 font-medium text-slate-900">{row.question_text}</td>
                             <td className="px-4 py-3 text-slate-600">{row.performance}</td>
                             <td className="px-4 py-3 text-slate-600">{row.importance}</td>
                             <td className="px-4 py-3 text-slate-600">{row.reason || '-'}</td>
+                            <td className="px-4 py-3 text-slate-600">
+                              {quadrantMap.get(row.question_id) ?? '-'}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
