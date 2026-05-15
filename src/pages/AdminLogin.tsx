@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { supabase } from '../lib/supabase'
+import { toast } from 'sonner'
 
 function AdminLogin() {
   const navigate = useNavigate()
@@ -21,10 +23,12 @@ function AdminLogin() {
 
     if (signInError) {
       setError(signInError.message)
+      toast.error(signInError.message)
       setLoading(false)
       return
     }
 
+    toast.success('Login admin berhasil.')
     navigate('/admin/dashboard', { replace: true })
   }
 
@@ -52,8 +56,11 @@ function AdminLogin() {
               Gunakan email dan password admin yang sudah dibuat di Supabase.
             </p>
 
-            <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-              <div>
+            {loading ? (
+              <LoadingSpinner />
+            ) : (
+              <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+                <div>
                 <label className="text-sm font-medium text-slate-700" htmlFor="admin-email">
                   Email
                 </label>
@@ -66,9 +73,9 @@ function AdminLogin() {
                   className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
                   placeholder="admin@lpdp.go.id"
                 />
-              </div>
+                </div>
 
-              <div>
+                <div>
                 <label className="text-sm font-medium text-slate-700" htmlFor="admin-password">
                   Password
                 </label>
@@ -81,22 +88,23 @@ function AdminLogin() {
                   className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
                   placeholder="••••••••"
                 />
-              </div>
-
-              {error ? (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {error}
                 </div>
-              ) : null}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="inline-flex w-full items-center justify-center rounded-full bg-[#003366] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(0,51,102,0.22)] transition hover:-translate-y-0.5 hover:bg-[#0a447f] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-              >
-                {loading ? 'Memproses...' : 'Login Admin'}
-              </button>
-            </form>
+                {error ? (
+                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {error}
+                  </div>
+                ) : null}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="inline-flex w-full items-center justify-center rounded-full bg-[#003366] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(0,51,102,0.22)] transition hover:-translate-y-0.5 hover:bg-[#0a447f] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                >
+                  {loading ? 'Memproses...' : 'Login Admin'}
+                </button>
+              </form>
+            )}
           </section>
         </div>
       </div>

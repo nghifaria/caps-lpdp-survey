@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import type { Database } from './types/database'
 import LoadingSpinner from './components/LoadingSpinner'
 import ProtectedRoute from './components/ProtectedRoute'
+import { Toaster } from 'sonner'
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 const AdminLogin = lazy(() => import('./pages/AdminLogin'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
@@ -42,6 +43,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <Toaster position="top-center" richColors />
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />

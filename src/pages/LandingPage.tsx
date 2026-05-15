@@ -1,8 +1,24 @@
+import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import Hero from '../components/Hero'
 import Navbar from '../components/Navbar'
 import StatCards from '../components/StatCards'
 
 function LandingPage() {
+  const location = useLocation()
+
+  useEffect(() => {
+    if (!location.hash) {
+      return
+    }
+
+    const element = document.querySelector(location.hash)
+
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [location.hash])
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.18),_transparent_28%),linear-gradient(180deg,_#003366_0%,_#01213f_46%,_#07111f_100%)] text-white">
       <Navbar />

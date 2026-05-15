@@ -10,6 +10,7 @@ import {
   YAxis,
 } from 'recharts'
 import LoadingSpinner from '../components/LoadingSpinner'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Database } from '../types/database'
 
@@ -45,6 +46,7 @@ type IpaPoint = {
 }
 
 function AdminDashboard() {
+  const navigate = useNavigate()
   const [survey, setSurvey] = useState<SurveyRow | null>(null)
   const [responses, setResponses] = useState<ResponseWithAnswers[]>([])
   const [loading, setLoading] = useState(true)
@@ -228,6 +230,11 @@ function AdminDashboard() {
     setUpdatingStatus(false)
   }
 
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    navigate('/admin/login', { replace: true })
+  }
+
   function exportCsv() {
     const rows = csvRows.map((row) =>
       [
@@ -294,6 +301,12 @@ function AdminDashboard() {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
+              <Link
+                to="/"
+                className="inline-flex items-center justify-center rounded-full border border-[#003366] bg-white px-5 py-3 text-sm font-semibold text-[#003366] transition hover:bg-slate-50"
+              >
+                Kembali ke Landing Page
+              </Link>
               {survey ? (
                 <button
                   type="button"
@@ -308,6 +321,13 @@ function AdminDashboard() {
                       : 'Buka Survei'}
                 </button>
               ) : null}
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Logout
+              </button>
             </div>
           </div>
 

@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { supabase } from '../lib/supabase'
 import type { Database } from '../types/database'
+import { toast } from 'sonner'
 
 const avatarBucket = 'avatars'
 
@@ -45,6 +48,7 @@ function Profile() {
 
       if (profileError) {
         setError(profileError.message)
+        toast.error(profileError.message)
         setLoading(false)
         return
       }
@@ -99,12 +103,14 @@ function Profile() {
 
       if (uploadResult.error) {
         setError(uploadResult.error.message)
+        toast.error(uploadResult.error.message)
         setSaving(false)
         return
       }
 
       const { data: publicUrlData } = supabase.storage.from(avatarBucket).getPublicUrl(filePath)
       nextAvatarUrl = publicUrlData.publicUrl
+      toast.success('Foto profil berhasil diunggah.')
     }
 
     const { error: updateError } = await (supabase.from('profiles') as any).upsert({
@@ -116,6 +122,7 @@ function Profile() {
 
     if (updateError) {
       setError(updateError.message)
+      toast.error(updateError.message)
       setSaving(false)
       return
     }
@@ -123,6 +130,7 @@ function Profile() {
     setAvatarUrl(nextAvatarUrl)
     setFile(null)
     setSuccess('Profil berhasil diperbarui.')
+    toast.success('Profil berhasil diperbarui.')
     setSaving(false)
   }
 
@@ -132,12 +140,16 @@ function Profile() {
         <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
           Profile Management
         </p>
+        <Link to="/" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#003366] transition hover:text-[#F97316]">
+          <span aria-hidden="true">←</span>
+          Back to Home
+        </Link>
         <h1 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-[#003366] sm:text-4xl">
           Profil Awardee
         </h1>
 
         {loading ? (
-          <p className="mt-6 text-sm text-slate-600">Memuat profil...</p>
+          <LoadingSpinner />
         ) : error ? (
           <p className="mt-6 text-sm text-red-600">{error}</p>
         ) : (

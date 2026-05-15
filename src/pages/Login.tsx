@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { supabase } from '../lib/supabase'
+import { toast } from 'sonner'
 
 function Login() {
   const navigate = useNavigate()
@@ -21,10 +23,12 @@ function Login() {
 
     if (signInError) {
       setError(signInError.message)
+      toast.error(signInError.message)
       setLoading(false)
       return
     }
 
+    toast.success('Login berhasil.')
     navigate('/profile', { replace: true })
   }
 
@@ -45,6 +49,11 @@ function Login() {
           </section>
 
           <section className="p-8 sm:p-10">
+            <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-[#003366] transition hover:text-[#F97316]">
+              <span aria-hidden="true">←</span>
+              Back to Home
+            </Link>
+
             <h2 className="text-2xl font-semibold tracking-[-0.03em] text-[#003366]">
               Masuk ke Akun
             </h2>
@@ -52,8 +61,11 @@ function Login() {
               Gunakan email dan password yang terdaftar.
             </p>
 
-            <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-              <div>
+            {loading ? (
+              <LoadingSpinner />
+            ) : (
+              <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+                <div>
                 <label className="text-sm font-medium text-slate-700" htmlFor="login-email">
                   Email
                 </label>
@@ -66,9 +78,9 @@ function Login() {
                   className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
                   placeholder="awardee@email.com"
                 />
-              </div>
+                </div>
 
-              <div>
+                <div>
                 <label className="text-sm font-medium text-slate-700" htmlFor="login-password">
                   Password
                 </label>
@@ -81,22 +93,23 @@ function Login() {
                   className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
                   placeholder="••••••••"
                 />
-              </div>
-
-              {error ? (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {error}
                 </div>
-              ) : null}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="inline-flex w-full items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.28)] transition hover:-translate-y-0.5 hover:bg-[#ff8a3d] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-              >
-                {loading ? 'Memproses...' : 'Login'}
-              </button>
-            </form>
+                {error ? (
+                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {error}
+                  </div>
+                ) : null}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="inline-flex w-full items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.28)] transition hover:-translate-y-0.5 hover:bg-[#ff8a3d] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                >
+                  {loading ? 'Memproses...' : 'Login'}
+                </button>
+              </form>
+            )}
 
             <p className="mt-6 text-sm text-slate-600">
               Belum punya akun?{' '}

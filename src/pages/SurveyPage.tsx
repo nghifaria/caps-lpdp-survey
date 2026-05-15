@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { supabase } from '../lib/supabase'
 import type { Database } from '../types/database'
+import { toast } from 'sonner'
 
 type SurveyRow = Database['public']['Tables']['surveys']['Row']
 type QuestionRow = Database['public']['Tables']['questions']['Row']
@@ -58,6 +59,7 @@ function getDropdownOptions(question: QuestionRow) {
 }
 
 function SurveyPage() {
+  const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const surveyParam = id ?? ''
   const [survey, setSurvey] = useState<SurveyRow | null>(null)
@@ -69,6 +71,29 @@ function SurveyPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const isSurveyActive = survey?.is_active ?? false
+  const hasStarted = useMemo(
+    () =>
+      Object.values(answers).some(
+        (answer) =>
+          Boolean(answer.textValue.trim()) ||
+          Boolean(answer.scoreImportance) ||
+          Boolean(answer.scorePerformance) ||
+          Boolean(answer.reason.trim()),
+      ),
+    [answers],
+  )
+
+  function handleBackToHome() {
+    if (hasStarted) {
+      const confirmed = window.confirm('Jawaban yang belum dikirim akan hilang. Kembali ke beranda?')
+
+      if (!confirmed) {
+        return
+      }
+    }
+
+    navigate('/', { replace: true })
+  }
 
   function updateAnswer(questionId: string, patch: Partial<AnswerDraft>) {
     setAnswers((current) => {
@@ -216,7 +241,7 @@ function SurveyPage() {
                 id={`reason-${question.id}`}
                 value={answer.reason}
                 onChange={(event) => updateAnswer(question.id, { reason: event.target.value })}
-                  disabled={!isSurveyActive}
+                disabled={!isSurveyActive}
                 required
                 rows={4}
                 placeholder="Jelaskan singkat alasan skor kepuasan di bawah 3"
@@ -240,6 +265,7 @@ function SurveyPage() {
 
     if (!isSurveyActive) {
       setSubmitError('Survei sudah ditutup dan tidak dapat menerima jawaban baru.')
+      toast.error('Survei sudah ditutup dan tidak dapat menerima jawaban baru.')
       return
     }
 
@@ -252,12 +278,14 @@ function SurveyPage() {
 
       if (question.question_type === 'short_text' && !answer.textValue.trim()) {
         setSubmitError(`Pertanyaan "${question.question_text}" wajib diisi.`)
+        toast.error(`Pertanyaan "${question.question_text}" wajib diisi.`)
         setSubmitting(false)
         return
       }
 
       if (question.question_type === 'dropdown' && !answer.textValue.trim()) {
         setSubmitError(`Pertanyaan "${question.question_text}" wajib dipilih.`)
+        toast.error(`Pertanyaan "${question.question_text}" wajib dipilih.`)
         setSubmitting(false)
         return
       }
@@ -265,12 +293,14 @@ function SurveyPage() {
       if (question.question_type === 'dual_likert') {
         if (!answer.scoreImportance || !answer.scorePerformance) {
           setSubmitError(`Pertanyaan "${question.question_text}" wajib diisi lengkap.`)
+          toast.error(`Pertanyaan "${question.question_text}" wajib diisi lengkap.`)
           setSubmitting(false)
           return
         }
 
         if (shouldShowReason(question, answer) && !answer.reason.trim()) {
           setSubmitError(`Alasan wajib diisi untuk pertanyaan "${question.question_text}".`)
+          toast.error(`Alasan wajib diisi untuk pertanyaan "${question.question_text}".`)
           setSubmitting(false)
           return
         }
@@ -289,6 +319,7 @@ function SurveyPage() {
 
     if (responseResult.error || !responseResult.data) {
       setSubmitError(responseResult.error?.message ?? 'Gagal menyimpan respons.')
+      toast.error(responseResult.error?.message ?? 'Gagal menyimpan respons.')
       setSubmitting(false)
       return
     }
@@ -323,11 +354,13 @@ function SurveyPage() {
 
     if (answersResult.error) {
       setSubmitError(answersResult.error.message)
+      toast.error(answersResult.error.message)
       setSubmitting(false)
       return
     }
 
     setSuccessMessage('Jawaban berhasil dikirim. Terima kasih.')
+    toast.success('Jawaban berhasil dikirim. Terima kasih.')
     setAnswers({})
     setSubmitting(false)
   }
@@ -423,6 +456,15 @@ function SurveyPage() {
           <p className="mt-6 text-sm text-red-600">{error}</p>
         ) : (
           <form className="mt-4" onSubmit={handleSubmit}>
+            <button
+              type="button"
+              onClick={handleBackToHome}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-[#003366] transition hover:text-[#F97316]"
+            >
+              <span aria-hidden="true">←</span>
+              Kembali ke Beranda
+            </button>
+
             <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[#003366] sm:text-4xl">
               {survey?.title}
             </h1>
