@@ -1,3 +1,7 @@
+import { Link } from 'react-router-dom'
+
+const surveyRouteId = 'survei-kepuasan-layanan-lpdp-2026'
+
 function Hero() {
   return (
     <section className="mx-auto grid max-w-7xl gap-10 px-4 pb-12 pt-12 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center lg:px-8 lg:pb-16 lg:pt-20">
@@ -17,12 +21,12 @@ function Hero() {
         </p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <a
-            href="#guideline"
+          <Link
+            to={`/survey/${surveyRouteId}`}
             className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.35)] transition hover:-translate-y-0.5 hover:bg-[#ff8a3d]"
           >
             Mulai Survei
-          </a>
+          </Link>
           <a
             href="#faq"
             className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white/85 transition hover:border-white/25 hover:bg-white/10"
