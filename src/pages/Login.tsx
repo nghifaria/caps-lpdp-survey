@@ -2,7 +2,10 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { supabase } from '../lib/supabase'
+import type { Database } from '../types/database'
 import { toast } from 'sonner'
+
+type UserRole = Database['public']['Tables']['profiles']['Row']['role']
 
 function Login() {
   const navigate = useNavigate()
@@ -28,8 +31,36 @@ function Login() {
       return
     }
 
+    const { data: userData, error: userError } = await supabase.auth.getUser()
+
+    if (userError || !userData.user) {
+      const message = 'Gagal memuat data pengguna setelah login.'
+      setError(message)
+      toast.error(message)
+      setLoading(false)
+      return
+    }
+
+    const { data: profileData, error: profileError } = (await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userData.user.id)
+      .maybeSingle()) as {
+      data: { role: UserRole } | null
+      error: { message: string } | null
+    }
+
+    if (profileError) {
+      setError(profileError.message)
+      toast.error(profileError.message)
+      setLoading(false)
+      return
+    }
+
+    const role: UserRole = profileData?.role ?? 'awardee'
+
     toast.success('Login berhasil.')
-    navigate('/profile', { replace: true })
+    navigate(role === 'admin' ? '/admin/dashboard' : '/', { replace: true })
   }
 
   return (
@@ -38,13 +69,13 @@ function Login() {
         <div className="grid w-full overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_24px_60px_rgba(0,51,102,0.08)] lg:grid-cols-[0.9fr_1.1fr]">
           <section className="bg-[#003366] p-8 text-white sm:p-10">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-white/65">
-              Awardee Access
+              Unified Access
             </p>
             <h1 className="mt-4 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
-              Login Responden
+              Login Admin & Awardee
             </h1>
             <p className="mt-4 max-w-md text-sm leading-7 text-white/75">
-              Masuk untuk melanjutkan survei atau memperbarui profil awardee.
+              Gunakan satu form login. Admin akan diarahkan ke dashboard, awardee ke beranda survei.
             </p>
           </section>
 
@@ -100,6 +131,10 @@ function Login() {
                     {error}
                   </div>
                 ) : null}
+
+                <p className="text-sm leading-6 text-slate-500">
+                  Setelah login, sistem akan membaca role dari profil dan mengarahkan Anda secara otomatis.
+                </p>
 
                 <button
                   type="submit"

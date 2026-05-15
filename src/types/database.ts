@@ -43,6 +43,7 @@ export interface ProfileRow {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
+  role: 'admin' | 'awardee';
   updated_at: string;
 }
 
@@ -125,18 +126,45 @@ export interface Database {
           id: string;
           full_name?: string | null;
           avatar_url?: string | null;
+          role?: 'admin' | 'awardee';
           updated_at?: string;
         };
         Update: {
           full_name?: string | null;
           avatar_url?: string | null;
+          role?: 'admin' | 'awardee';
           updated_at?: string;
         };
         Relationships: [];
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      list_profiles_for_admin: {
+        Args: Record<string, never>;
+        Returns: {
+          id: string;
+          full_name: string | null;
+          email: string | null;
+          role: 'admin' | 'awardee';
+          updated_at: string;
+        }[];
+      };
+      set_user_role: {
+        Args: {
+          target_user_id: string;
+          next_role: 'admin' | 'awardee';
+        };
+        Returns: boolean;
+      };
+      set_survey_status: {
+        Args: {
+          survey_id: string;
+          next_status: boolean;
+        };
+        Returns: boolean;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

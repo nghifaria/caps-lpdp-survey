@@ -6,7 +6,6 @@ import LoadingSpinner from './components/LoadingSpinner'
 import ProtectedRoute from './components/ProtectedRoute'
 import { Toaster } from 'sonner'
 const LandingPage = lazy(() => import('./pages/LandingPage'))
-const AdminLogin = lazy(() => import('./pages/AdminLogin'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const SurveyPage = lazy(() => import('./pages/SurveyPage'))
 const Login = lazy(() => import('./pages/Login'))
@@ -49,7 +48,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/login" element={<Navigate to="/login" replace />} />
           <Route
             path="/admin/dashboard"
             element={

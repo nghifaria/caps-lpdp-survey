@@ -7,7 +7,7 @@ type ProtectedRouteProps = {
   redirectTo?: string
 }
 
-function ProtectedRoute({ session, children, redirectTo = '/admin/login' }: ProtectedRouteProps) {
+function ProtectedRoute({ session, children, redirectTo = '/login' }: ProtectedRouteProps) {
   if (!session) {
     return <Navigate to={redirectTo} replace />
   }

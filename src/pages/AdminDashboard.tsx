@@ -13,11 +13,13 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Database } from '../types/database'
+import { toast } from 'sonner'
 
 type SurveyRow = Database['public']['Tables']['surveys']['Row']
 type ResponseRow = Database['public']['Tables']['responses']['Row']
 type AnswerRow = Database['public']['Tables']['answers']['Row']
 type QuestionRow = Database['public']['Tables']['questions']['Row']
+type UserRole = Database['public']['Tables']['profiles']['Row']['role']
 
 type ResponseAnswer = AnswerRow & {
   questions: Pick<QuestionRow, 'id' | 'question_text' | 'question_type'> | null
@@ -45,6 +47,30 @@ type IpaPoint = {
   quadrant: string
 }
 
+type AdminUserRow = {
+  id: string
+  full_name: string | null
+  email: string | null
+  role: UserRole
+  updated_at: string
+}
+
+type AdminRpcClient = {
+  rpc(
+    functionName: 'list_profiles_for_admin',
+  ): Promise<{ data: AdminUserRow[] | null; error: { message: string } | null }>
+  rpc(
+    functionName: 'set_user_role',
+    args: { target_user_id: string; next_role: UserRole },
+  ): Promise<{ error: { message: string } | null }>
+  rpc(
+    functionName: 'set_survey_status',
+    args: { survey_id: string; next_status: boolean },
+  ): Promise<{ error: { message: string } | null }>
+}
+
+const adminRpc = supabase as unknown as AdminRpcClient
+
 function AdminDashboard() {
   const navigate = useNavigate()
   const [survey, setSurvey] = useState<SurveyRow | null>(null)
@@ -52,13 +78,80 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [users, setUsers] = useState<AdminUserRow[]>([])
+  const [usersLoading, setUsersLoading] = useState(true)
+  const [usersError, setUsersError] = useState<string | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
 
+    async function loadUsers() {
+      setUsersLoading(true)
+      setUsersError(null)
+
+      const userListResult = await adminRpc.rpc('list_profiles_for_admin')
+
+      if (cancelled) {
+        return
+      }
+
+      if (userListResult.error) {
+        setUsersError(userListResult.error.message)
+        setUsers([])
+      } else {
+        setUsers((userListResult.data ?? []) as AdminUserRow[])
+      }
+
+      setUsersLoading(false)
+    }
+
     async function loadDashboard() {
       setLoading(true)
       setError(null)
+
+      const { data: authData, error: authError } = await supabase.auth.getUser()
+      const user = authData.user
+
+      if (authError || !user) {
+        if (!cancelled) {
+          setError(authError?.message ?? 'User belum login.')
+          setLoading(false)
+          setUsersLoading(false)
+        }
+        return
+      }
+
+      if (!cancelled) {
+        setCurrentUserId(user.id)
+      }
+
+      const { data: profileData, error: profileError } = (await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle()) as {
+        data: { role: UserRole } | null
+        error: { message: string } | null
+      }
+
+      if (profileError) {
+        if (!cancelled) {
+          setError(profileError.message)
+          setLoading(false)
+          setUsersLoading(false)
+        }
+        return
+      }
+
+      if (profileData?.role !== 'admin') {
+        toast.error('Akses admin diperlukan.')
+        navigate('/', { replace: true })
+        return
+      }
+
+      void loadUsers()
 
       const surveyResult = await supabase
         .from('surveys')
@@ -108,7 +201,7 @@ function AdminDashboard() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [navigate])
 
   const { ipaPoints, csvRows, means } = useMemo(() => {
     const rawRows: CsvRow[] = []
@@ -204,6 +297,37 @@ function AdminDashboard() {
     [ipaPoints],
   )
 
+  async function handleRoleChange(userId: string, nextRole: UserRole) {
+    if (userId === currentUserId) {
+      return
+    }
+
+    const selectedUser = users.find((user) => user.id === userId)
+
+    if (!selectedUser || selectedUser.role === nextRole) {
+      return
+    }
+
+    setUpdatingRoleId(userId)
+
+    const { error: updateError } = await adminRpc.rpc('set_user_role', {
+      target_user_id: userId,
+      next_role: nextRole,
+    })
+
+    if (updateError) {
+      toast.error(updateError.message)
+      setUpdatingRoleId(null)
+      return
+    }
+
+    setUsers((current) =>
+      current.map((user) => (user.id === userId ? { ...user, role: nextRole } : user)),
+    )
+    toast.success(`Role diperbarui menjadi ${nextRole}.`)
+    setUpdatingRoleId(null)
+  }
+
   async function toggleSurveyStatus() {
     if (!survey) {
       return
@@ -214,25 +338,33 @@ function AdminDashboard() {
 
     const nextStatus = !survey.is_active
 
-    const updateResult = await (supabase.from('surveys') as any)
-      .update({ is_active: nextStatus })
-      .eq('id', survey.id)
-      .select('id, title, is_active, created_at')
-      .single()
+    const { error: updateError } = await adminRpc.rpc('set_survey_status', {
+      survey_id: survey.id,
+      next_status: nextStatus,
+    })
 
-    if (updateResult.error || !updateResult.data) {
-      setError(updateResult.error?.message ?? 'Gagal memperbarui status survei.')
+    if (updateError) {
+      setError(updateError.message ?? 'Gagal memperbarui status survei.')
+      toast.error(updateError.message ?? 'Gagal memperbarui status survei.')
       setUpdatingStatus(false)
       return
     }
 
-    setSurvey(updateResult.data as SurveyRow)
+    setSurvey((current) =>
+      current
+        ? {
+            ...current,
+            is_active: nextStatus,
+          }
+        : current,
+    )
+    toast.success(nextStatus ? 'Survei berhasil dibuka.' : 'Survei berhasil ditutup.')
     setUpdatingStatus(false)
   }
 
   async function handleLogout() {
     await supabase.auth.signOut()
-    navigate('/admin/login', { replace: true })
+    navigate('/login', { replace: true })
   }
 
   function exportCsv() {
@@ -428,6 +560,73 @@ function AdminDashboard() {
                     </table>
                   </div>
                 </div>
+              </section>
+
+              <section className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-slate-900">User Management</h2>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Kelola role user tanpa akses manual ke database.
+                    </p>
+                  </div>
+                </div>
+
+                {usersLoading ? (
+                  <div className="mt-5">
+                    <LoadingSpinner />
+                  </div>
+                ) : usersError ? (
+                  <p className="mt-5 text-sm text-red-600">{usersError}</p>
+                ) : (
+                  <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                        <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500">
+                          <tr>
+                            <th className="px-4 py-3">Nama</th>
+                            <th className="px-4 py-3">Email</th>
+                            <th className="px-4 py-3">Role</th>
+                            <th className="px-4 py-3">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {users.map((user) => (
+                            <tr key={user.id}>
+                              <td className="px-4 py-3 font-medium text-slate-900">
+                                {user.full_name || '-'}
+                                {user.id === currentUserId ? (
+                                  <span className="ml-2 rounded-full bg-[#F97316]/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#F97316]">
+                                    You
+                                  </span>
+                                ) : null}
+                              </td>
+                              <td className="px-4 py-3 text-slate-600">{user.email ?? '-'}</td>
+                              <td className="px-4 py-3 text-slate-600">
+                                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">
+                                  {user.role}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-slate-600">
+                                <select
+                                  value={user.role}
+                                  disabled={user.id === currentUserId || updatingRoleId === user.id}
+                                  onChange={(event) =>
+                                    void handleRoleChange(user.id, event.target.value as UserRole)
+                                  }
+                                  className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+                                >
+                                  <option value="awardee">awardee</option>
+                                  <option value="admin">admin</option>
+                                </select>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </section>
             </>
           )}
