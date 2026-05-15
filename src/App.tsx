@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import type { Database } from './types/database'
 import LandingPage from './pages/LandingPage'
 import AdminLogin from './pages/AdminLogin'
+import AdminDashboard from './pages/AdminDashboard'
 import SurveyPage from './pages/SurveyPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -40,15 +41,16 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/survey/:id" element={<SurveyPage />} />
         <Route
-          path="/admin"
+          path="/admin/dashboard"
           element={
             <ProtectedRoute session={session}>
-              <Navigate to="/" replace />
+              <AdminDashboard />
             </ProtectedRoute>
           }
         />
+        <Route path="/survey/:id" element={<SurveyPage />} />
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   )

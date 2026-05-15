@@ -25,7 +25,7 @@ function AdminLogin() {
       return
     }
 
-    navigate('/', { replace: true })
+    navigate('/admin/dashboard', { replace: true })
   }
 
   return (
