@@ -44,6 +44,12 @@ create policy "surveys_select_authenticated"
   to authenticated
   using (true);
 
+create policy "surveys_select_public"
+  on public.surveys
+  for select
+  to anon, authenticated
+  using (true);
+
 create policy "questions_select_public"
   on public.questions
   for select
@@ -56,8 +62,20 @@ create policy "responses_select_authenticated"
   to authenticated
   using (true);
 
+create policy "responses_insert_public"
+  on public.responses
+  for insert
+  to anon, authenticated
+  with check (true);
+
 create policy "answers_select_authenticated"
   on public.answers
   for select
   to authenticated
   using (true);
+
+create policy "answers_insert_public"
+  on public.answers
+  for insert
+  to anon, authenticated
+  with check (true);
