@@ -59,8 +59,8 @@ function Navbar() {
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#003366]/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-3 text-white">
-          <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-white/10 ring-1 ring-white/15">
-            <img src="/logo_lpdp.png" alt="LPDP" className="h-full w-full object-cover" />
+          <div className="flex h-12 w-32 items-center justify-center overflow-hidden rounded-2xl bg-white/10 px-2 ring-1 ring-white/15 sm:w-36">
+            <img src="/logo_lpdp.png" alt="LPDP" className="h-full w-full object-contain" />
           </div>
           <div className="leading-tight">
             <p className="text-sm font-semibold uppercase tracking-[0.28em] text-white/70">

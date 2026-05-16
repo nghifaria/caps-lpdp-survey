@@ -74,8 +74,8 @@ function Login() {
 
         <div className="relative z-10 w-full max-w-md">
           <div className="mb-8 flex items-center justify-center">
-            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-3xl bg-white/15 ring-1 ring-white/20">
-              <img src="/logo_lpdp.png" alt="LPDP" className="h-full w-full object-cover" />
+            <div className="flex h-16 w-40 items-center justify-center overflow-hidden rounded-3xl bg-white/15 px-3 ring-1 ring-white/20">
+              <img src="/logo_lpdp.png" alt="LPDP" className="h-full w-full object-contain" />
             </div>
           </div>
 
