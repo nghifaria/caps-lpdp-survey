@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import {
   CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
   ReferenceLine,
   ResponsiveContainer,
   Scatter,
@@ -59,6 +65,18 @@ type ExecutiveKpi = {
   value: string
   tone: 'default' | 'warning' | 'accent'
 }
+
+type ParticipationTrendPoint = {
+  date: string
+  count: number
+}
+
+type ProvinceSlice = {
+  name: string
+  value: number
+}
+
+const provinceColors = ['#003366', '#F26522', '#0F9D58', '#8B5CF6', '#D97706', '#0EA5E9']
 
 type QuadrantInsight = {
   label: string
@@ -423,6 +441,41 @@ function AdminDashboard() {
     }
 
     return feedback
+  }, [filteredResponses])
+
+  const participationTrend = useMemo(() => {
+    const counts = new Map<string, number>()
+
+    for (const response of filteredResponses) {
+      const dateKey = new Date(response.submitted_at).toISOString().slice(0, 10)
+      counts.set(dateKey, (counts.get(dateKey) ?? 0) + 1)
+    }
+
+    return Array.from(counts.entries())
+      .sort(([leftDate], [rightDate]) => leftDate.localeCompare(rightDate))
+      .map(([date, count]) => ({ date, count })) satisfies ParticipationTrendPoint[]
+  }, [filteredResponses])
+
+  const provinceDistribution = useMemo(() => {
+    const counts = new Map<string, number>()
+
+    for (const response of filteredResponses) {
+      const provinceAnswer = response.answers?.find(
+        (answer) => answer.questions?.question_text === 'Asal Provinsi',
+      )
+
+      const province = provinceAnswer?.text_value?.trim()
+
+      if (!province) {
+        continue
+      }
+
+      counts.set(province, (counts.get(province) ?? 0) + 1)
+    }
+
+    return Array.from(counts.entries())
+      .sort(([leftProvince], [rightProvince]) => leftProvince.localeCompare(rightProvince))
+      .map(([name, value]) => ({ name, value })) satisfies ProvinceSlice[]
   }, [filteredResponses])
 
   const executiveKpis = useMemo(() => {
@@ -914,6 +967,82 @@ function AdminDashboard() {
                         </p>
                       </article>
                     ))}
+                  </div>
+
+                  <div className="grid gap-6 xl:grid-cols-2 print:grid print:grid-cols-2 print:gap-4">
+                    <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <h2 className="text-lg font-semibold text-slate-900">Tren Partisipasi</h2>
+                          <p className="mt-1 text-sm text-slate-600">
+                            Total respons per tanggal berdasarkan data yang sudah difilter.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 h-[300px] w-full rounded-[1.5rem] bg-white p-3 print:h-[240px] print:rounded-none print:bg-white print:p-0 print:break-inside-avoid">
+                        {participationTrend.length ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={participationTrend} margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                              <Tooltip />
+                              <Line
+                                type="monotone"
+                                dataKey="count"
+                                stroke="#F26522"
+                                strokeWidth={3}
+                                dot={{ r: 3 }}
+                                activeDot={{ r: 5 }}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="flex h-full items-center justify-center rounded-[1.25rem] border border-dashed border-slate-300 text-sm text-slate-600">
+                            Belum ada data partisipasi untuk grafik ini.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <h2 className="text-lg font-semibold text-slate-900">Sebaran Provinsi</h2>
+                          <p className="mt-1 text-sm text-slate-600">
+                            Distribusi asal provinsi dari respons pada filter aktif.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 h-[300px] w-full rounded-[1.5rem] bg-white p-3 print:h-[240px] print:rounded-none print:bg-white print:p-0 print:break-inside-avoid">
+                        {provinceDistribution.length ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={provinceDistribution}
+                                dataKey="value"
+                                nameKey="name"
+                                innerRadius={68}
+                                outerRadius={104}
+                                paddingAngle={2}
+                              >
+                                {provinceDistribution.map((entry, index) => (
+                                  <Cell key={`${entry.name}-${index}`} fill={provinceColors[index % provinceColors.length]} />
+                                ))}
+                              </Pie>
+                              <Tooltip />
+                              <Legend layout="vertical" verticalAlign="middle" align="right" />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="flex h-full items-center justify-center rounded-[1.25rem] border border-dashed border-slate-300 text-sm text-slate-600">
+                            Belum ada data provinsi untuk ditampilkan.
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr] print:block print:gap-0">
