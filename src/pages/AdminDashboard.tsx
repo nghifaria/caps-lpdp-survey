@@ -55,6 +55,8 @@ type AdminUserRow = {
   updated_at: string
 }
 
+const provinceOptions = ['Jakarta', 'Jawa Barat', 'Jawa Tengah', 'Jawa Timur']
+
 type AdminRpcClient = {
   rpc(
     functionName: 'list_profiles_for_admin',
@@ -75,6 +77,7 @@ function AdminDashboard() {
   const navigate = useNavigate()
   const [survey, setSurvey] = useState<SurveyRow | null>(null)
   const [responses, setResponses] = useState<ResponseWithAnswers[]>([])
+  const [selectedProvince, setSelectedProvince] = useState('all')
   const [loading, setLoading] = useState(true)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -203,6 +206,20 @@ function AdminDashboard() {
     }
   }, [navigate])
 
+  const filteredResponses = useMemo(() => {
+    if (selectedProvince === 'all') {
+      return responses
+    }
+
+    return responses.filter((response) => {
+      const provinceAnswer = response.answers?.find(
+        (answer) => answer.questions?.question_text === 'Asal Provinsi',
+      )
+
+      return provinceAnswer?.text_value === selectedProvince
+    })
+  }, [responses, selectedProvince])
+
   const { ipaPoints, csvRows, means } = useMemo(() => {
     const rawRows: CsvRow[] = []
     const aggregates = new Map<
@@ -210,7 +227,7 @@ function AdminDashboard() {
       { questionText: string; performanceSum: number; importanceSum: number; count: number }
     >()
 
-    for (const response of responses) {
+    for (const response of filteredResponses) {
       for (const answer of response.answers ?? []) {
         if (answer.questions?.question_type !== 'dual_likert') {
           continue
@@ -290,7 +307,7 @@ function AdminDashboard() {
         importance: averageImportance,
       },
     }
-  }, [responses])
+  }, [filteredResponses])
 
   const quadrantMap = useMemo(
     () => new Map(ipaPoints.map((point) => [point.question_id, point.quadrant])),
@@ -471,26 +488,44 @@ function AdminDashboard() {
             <>
               <section className="mt-8 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
                 <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6">
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
                       <h2 className="text-lg font-semibold text-slate-900">IPA Scatter Plot</h2>
                       <p className="mt-1 text-sm text-slate-600">
                         Kiri bawah ke kanan atas menggambarkan distribusi kuadran.
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-2 text-xs font-medium text-slate-600">
-                      <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
-                        Q1 Prioritas Utama
-                      </span>
-                      <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
-                        Q2 Pertahankan Prestasi
-                      </span>
-                      <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
-                        Q3 Prioritas Rendah
-                      </span>
-                      <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
-                        Q4 Berlebihan
-                      </span>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                      <label className="block text-sm font-medium text-slate-700" htmlFor="province-filter">
+                        Asal Provinsi
+                        <select
+                          id="province-filter"
+                          value={selectedProvince}
+                          onChange={(event) => setSelectedProvince(event.target.value)}
+                          className="mt-2 w-full min-w-[220px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                        >
+                          <option value="all">Semua Provinsi</option>
+                          {provinceOptions.map((province) => (
+                            <option key={province} value={province}>
+                              {province}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <div className="flex flex-wrap gap-2 text-xs font-medium text-slate-600">
+                        <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
+                          Q1 Prioritas Utama
+                        </span>
+                        <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
+                          Q2 Pertahankan Prestasi
+                        </span>
+                        <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
+                          Q3 Prioritas Rendah
+                        </span>
+                        <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
+                          Q4 Berlebihan
+                        </span>
+                      </div>
                     </div>
                   </div>
 
