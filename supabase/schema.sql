@@ -50,6 +50,18 @@ alter table public.profiles enable row level security;
 alter table public.profiles
   add column if not exists role text;
 
+alter table public.profiles
+  add column if not exists nik text;
+
+alter table public.profiles
+  add column if not exists date_of_birth date;
+
+alter table public.profiles
+  add column if not exists province text;
+
+alter table public.profiles
+  add column if not exists university text;
+
 update public.profiles
 set role = coalesce(role, 'awardee');
 

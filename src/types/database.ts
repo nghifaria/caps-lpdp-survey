@@ -43,6 +43,10 @@ export interface ProfileRow {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
+  nik: string | null;
+  date_of_birth: string | null;
+  province: string | null;
+  university: string | null;
   role: 'admin' | 'awardee';
   updated_at: string;
 }
@@ -126,12 +130,20 @@ export interface Database {
           id: string;
           full_name?: string | null;
           avatar_url?: string | null;
+          nik?: string | null;
+          date_of_birth?: string | null;
+          province?: string | null;
+          university?: string | null;
           role?: 'admin' | 'awardee';
           updated_at?: string;
         };
         Update: {
           full_name?: string | null;
           avatar_url?: string | null;
+          nik?: string | null;
+          date_of_birth?: string | null;
+          province?: string | null;
+          university?: string | null;
           role?: 'admin' | 'awardee';
           updated_at?: string;
         };

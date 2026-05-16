@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { supabase } from '../lib/supabase'
@@ -6,11 +6,16 @@ import type { Database } from '../types/database'
 import { toast } from 'sonner'
 
 const avatarBucket = 'avatars'
+const provinceOptions = ['Jakarta', 'Jawa Barat', 'Jawa Tengah', 'Jawa Timur', 'Banten', 'DI Yogyakarta', 'Bali']
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
 function Profile() {
   const [fullName, setFullName] = useState('')
+  const [nik, setNik] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [province, setProvince] = useState('')
+  const [university, setUniversity] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(true)
@@ -38,7 +43,7 @@ function Profile() {
 
       const { data, error: profileError } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, updated_at')
+        .select('id, full_name, avatar_url, nik, date_of_birth, province, university, updated_at')
         .eq('id', user.id)
         .maybeSingle()
 
@@ -56,6 +61,10 @@ function Profile() {
       if (data) {
         const profileData = data as ProfileRow
         setFullName(profileData.full_name ?? '')
+        setNik(profileData.nik ?? '')
+        setDateOfBirth(profileData.date_of_birth ?? '')
+        setProvince(profileData.province ?? '')
+        setUniversity(profileData.university ?? '')
         setAvatarUrl(profileData.avatar_url ?? '')
       }
 
@@ -77,7 +86,7 @@ function Profile() {
     return avatarUrl
   }, [avatarUrl, file])
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setSaving(true)
     setError(null)
@@ -117,6 +126,10 @@ function Profile() {
       id: user.id,
       full_name: fullName,
       avatar_url: nextAvatarUrl,
+      nik,
+      date_of_birth: dateOfBirth || null,
+      province: province || null,
+      university,
       updated_at: new Date().toISOString(),
     })
 
@@ -190,6 +203,68 @@ function Profile() {
                   onChange={(event) => setFullName(event.target.value)}
                   className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
                 />
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium text-slate-700" htmlFor="nik">
+                    NIK
+                  </label>
+                  <input
+                    id="nik"
+                    type="text"
+                    value={nik}
+                    onChange={(event) => setNik(event.target.value)}
+                    placeholder="Contoh: 3174xxxxxxxxxxxx"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700" htmlFor="date-of-birth">
+                    Tanggal Lahir
+                  </label>
+                  <input
+                    id="date-of-birth"
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(event) => setDateOfBirth(event.target.value)}
+                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700" htmlFor="province">
+                    Asal Provinsi
+                  </label>
+                  <select
+                    id="province"
+                    value={province}
+                    onChange={(event) => setProvince(event.target.value)}
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                  >
+                    <option value="">Pilih provinsi</option>
+                    {provinceOptions.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700" htmlFor="university">
+                    Asal Perguruan Tinggi / Universitas
+                  </label>
+                  <input
+                    id="university"
+                    type="text"
+                    value={university}
+                    onChange={(event) => setUniversity(event.target.value)}
+                    placeholder="Contoh: Universitas Indonesia"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                  />
+                </div>
               </div>
 
               {success ? (
