@@ -47,6 +47,19 @@ type IpaPoint = {
   quadrant: string
 }
 
+type CriticalFeedbackItem = {
+  response_id: string
+  question_text: string
+  performance: number
+  reason: string
+}
+
+type ExecutiveKpi = {
+  label: string
+  value: string
+  tone: 'default' | 'warning' | 'accent'
+}
+
 type AdminUserRow = {
   id: string
   full_name: string | null
@@ -78,6 +91,7 @@ function AdminDashboard() {
   const [survey, setSurvey] = useState<SurveyRow | null>(null)
   const [responses, setResponses] = useState<ResponseWithAnswers[]>([])
   const [selectedProvince, setSelectedProvince] = useState('all')
+  const [activeTab, setActiveTab] = useState<'analytics' | 'critical-feedback' | 'users'>('analytics')
   const [loading, setLoading] = useState(true)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -314,6 +328,79 @@ function AdminDashboard() {
     [ipaPoints],
   )
 
+  const criticalFeedback = useMemo(() => {
+    const feedback: CriticalFeedbackItem[] = []
+
+    for (const response of filteredResponses) {
+      for (const answer of response.answers ?? []) {
+        if (answer.questions?.question_type !== 'dual_likert') {
+          continue
+        }
+
+        const performance = Number(answer.score_performance)
+        const reason = answer.reason?.trim() ?? ''
+
+        if (!Number.isFinite(performance) || performance >= 3 || !reason) {
+          continue
+        }
+
+        feedback.push({
+          response_id: response.id,
+          question_text: answer.questions?.question_text ?? 'Unknown question',
+          performance,
+          reason,
+        })
+      }
+    }
+
+    return feedback
+  }, [filteredResponses])
+
+  const executiveKpis = useMemo(() => {
+    const performanceScores: number[] = []
+
+    for (const response of filteredResponses) {
+      for (const answer of response.answers ?? []) {
+        if (answer.questions?.question_type !== 'dual_likert') {
+          continue
+        }
+
+        const performance = Number(answer.score_performance)
+
+        if (Number.isFinite(performance)) {
+          performanceScores.push(performance)
+        }
+      }
+    }
+
+    const csi =
+      performanceScores.length > 0
+        ? performanceScores.reduce((sum, score) => sum + score, 0) / performanceScores.length
+        : 0
+
+    return [
+      {
+        label: 'Total Responden Filtered',
+        value: filteredResponses.length.toString(),
+        tone: 'default',
+      },
+      {
+        label: 'Customer Satisfaction Index (CSI)',
+        value: csi > 0 ? `${csi.toFixed(2)} / 5` : '-',
+        tone: 'accent',
+      },
+      {
+        label: 'Critical Issues Count',
+        value: criticalFeedback.length.toString(),
+        tone: criticalFeedback.length > 0 ? 'warning' : 'default',
+      },
+    ] satisfies ExecutiveKpi[]
+  }, [criticalFeedback.length, filteredResponses])
+
+  function handlePrintReport() {
+    window.print()
+  }
+
   async function handleRoleChange(userId: string, nextRole: UserRole) {
     if (userId === currentUserId) {
       return
@@ -480,12 +567,34 @@ function AdminDashboard() {
             </div>
           </div>
 
+          <div className="mt-6 inline-flex rounded-full border border-slate-200 bg-slate-50 p-1">
+            {[
+              { key: 'analytics', label: 'Analytics' },
+              { key: 'critical-feedback', label: 'Critical Feedback' },
+              { key: 'users', label: 'User Management' },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key as typeof activeTab)}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  activeTab === tab.key
+                    ? 'bg-[#003366] text-white shadow-[0_10px_24px_rgba(0,51,102,0.18)]'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
           {loading ? (
             <LoadingSpinner />
           ) : error ? (
             <p className="mt-8 text-sm text-red-600">{error}</p>
           ) : (
             <>
+              {activeTab === 'analytics' ? (
               <section className="mt-8 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
                 <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -545,124 +654,190 @@ function AdminDashboard() {
                   </div>
                 </div>
               </section>
+              ) : null}
 
-              <section className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-lg font-semibold text-slate-900">Raw Data</h2>
-                    <p className="mt-1 text-sm text-slate-600">
-                      Jawaban mentah untuk analisis lanjutan atau ekspor CSV.
-                    </p>
+              {activeTab === 'critical-feedback' ? (
+                <section className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-lg font-semibold text-slate-900">Critical Feedback</h2>
+                      <p className="mt-1 text-sm text-slate-600">
+                        Keluhan dengan skor performance di bawah 3 dan alasan yang diisi, sudah mengikuti filter provinsi aktif.
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-[#003366]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#003366]">
+                      {criticalFeedback.length} feedback
+                    </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={exportCsv}
-                    className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#ff8a3d]"
-                  >
-                    Export CSV
-                  </button>
-                </div>
 
-                <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-                      <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500">
-                        <tr>
-                          <th className="px-4 py-3">Response ID</th>
-                          <th className="px-4 py-3">Submitted At</th>
-                          <th className="px-4 py-3">Question</th>
-                          <th className="px-4 py-3">Performance</th>
-                          <th className="px-4 py-3">Importance</th>
-                          <th className="px-4 py-3">Reason</th>
-                          <th className="px-4 py-3">Quadrant</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200">
-                        {csvRows.map((row) => (
-                          <tr key={`${row.response_id}-${row.question_text}`}>
-                            <td className="px-4 py-3 text-slate-600">{row.response_id}</td>
-                            <td className="px-4 py-3 text-slate-600">{row.submitted_at}</td>
-                            <td className="px-4 py-3 font-medium text-slate-900">{row.question_text}</td>
-                            <td className="px-4 py-3 text-slate-600">{row.performance}</td>
-                            <td className="px-4 py-3 text-slate-600">{row.importance}</td>
-                            <td className="px-4 py-3 text-slate-600">{row.reason || '-'}</td>
-                            <td className="px-4 py-3 text-slate-600">
-                              {quadrantMap.get(row.question_id) ?? '-'}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </section>
+                  {criticalFeedback.length ? (
+                    <div className="mt-5 grid gap-4 md:grid-cols-2">
+                      {criticalFeedback.map((feedback, index) => (
+                        <article
+                          key={`${feedback.response_id}-${feedback.question_text}-${index}`}
+                          className="rounded-[1.5rem] border border-amber-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#F97316]">
+                                Question Text
+                              </p>
+                              <h3 className="mt-2 text-base font-semibold text-slate-900">
+                                {feedback.question_text}
+                              </h3>
+                            </div>
+                            <span className="rounded-full bg-red-50 px-3 py-1 text-sm font-semibold text-red-700">
+                              Performance {feedback.performance}
+                            </span>
+                          </div>
 
-              <section className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-lg font-semibold text-slate-900">User Management</h2>
-                    <p className="mt-1 text-sm text-slate-600">
-                      Kelola role user tanpa akses manual ke database.
-                    </p>
-                  </div>
-                </div>
+                          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-red-600">
+                              Keluhan
+                            </p>
+                            <p className="mt-2 text-sm leading-7 text-slate-700">
+                              {feedback.reason}
+                            </p>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-white p-8 text-center">
+                      <p className="text-base font-semibold text-slate-900">
+                        Semua responden puas dengan layanan periode ini.
+                      </p>
+                      <p className="mt-2 text-sm leading-7 text-slate-600">
+                        Tidak ada feedback kritis yang memenuhi kriteria pada filter provinsi saat ini.
+                      </p>
+                    </div>
+                  )}
+                </section>
+              ) : null}
 
-                {usersLoading ? (
-                  <div className="mt-5">
-                    <LoadingSpinner />
-                  </div>
-                ) : usersError ? (
-                  <p className="mt-5 text-sm text-red-600">{usersError}</p>
-                ) : (
-                  <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-                        <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500">
-                          <tr>
-                            <th className="px-4 py-3">Nama</th>
-                            <th className="px-4 py-3">Email</th>
-                            <th className="px-4 py-3">Role</th>
-                            <th className="px-4 py-3">Aksi</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-200">
-                          {users.map((user) => (
-                            <tr key={user.id}>
-                              <td className="px-4 py-3 font-medium text-slate-900">
-                                {user.full_name || '-'}
-                                {user.id === currentUserId ? (
-                                  <span className="ml-2 rounded-full bg-[#F97316]/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#F97316]">
-                                    You
-                                  </span>
-                                ) : null}
-                              </td>
-                              <td className="px-4 py-3 text-slate-600">{user.email ?? '-'}</td>
-                              <td className="px-4 py-3 text-slate-600">
-                                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">
-                                  {user.role}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 text-slate-600">
-                                <select
-                                  value={user.role}
-                                  disabled={user.id === currentUserId || updatingRoleId === user.id}
-                                  onChange={(event) =>
-                                    void handleRoleChange(user.id, event.target.value as UserRole)
-                                  }
-                                  className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10 disabled:cursor-not-allowed disabled:bg-slate-100"
-                                >
-                                  <option value="awardee">awardee</option>
-                                  <option value="admin">admin</option>
-                                </select>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+              {activeTab === 'users' ? (
+                <section className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-lg font-semibold text-slate-900">User Management</h2>
+                      <p className="mt-1 text-sm text-slate-600">
+                        Kelola role user tanpa akses manual ke database.
+                      </p>
                     </div>
                   </div>
-                )}
-              </section>
+
+                  {usersLoading ? (
+                    <div className="mt-5">
+                      <LoadingSpinner />
+                    </div>
+                  ) : usersError ? (
+                    <p className="mt-5 text-sm text-red-600">{usersError}</p>
+                  ) : (
+                    <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                          <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500">
+                            <tr>
+                              <th className="px-4 py-3">Nama</th>
+                              <th className="px-4 py-3">Email</th>
+                              <th className="px-4 py-3">Role</th>
+                              <th className="px-4 py-3">Aksi</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200">
+                            {users.map((user) => (
+                              <tr key={user.id}>
+                                <td className="px-4 py-3 font-medium text-slate-900">
+                                  {user.full_name || '-'}
+                                  {user.id === currentUserId ? (
+                                    <span className="ml-2 rounded-full bg-[#F97316]/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#F97316]">
+                                      You
+                                    </span>
+                                  ) : null}
+                                </td>
+                                <td className="px-4 py-3 text-slate-600">{user.email ?? '-'}</td>
+                                <td className="px-4 py-3 text-slate-600">
+                                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">
+                                    {user.role}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-slate-600">
+                                  <select
+                                    value={user.role}
+                                    disabled={user.id === currentUserId || updatingRoleId === user.id}
+                                    onChange={(event) =>
+                                      void handleRoleChange(user.id, event.target.value as UserRole)
+                                    }
+                                    className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+                                  >
+                                    <option value="awardee">awardee</option>
+                                    <option value="admin">admin</option>
+                                  </select>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </section>
+              ) : null}
+
+              {activeTab === 'analytics' ? (
+                <>
+                  <section className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h2 className="text-lg font-semibold text-slate-900">Raw Data</h2>
+                        <p className="mt-1 text-sm text-slate-600">
+                          Jawaban mentah untuk analisis lanjutan atau ekspor CSV.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={exportCsv}
+                        className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#ff8a3d]"
+                      >
+                        Export CSV
+                      </button>
+                    </div>
+
+                    <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                          <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500">
+                            <tr>
+                              <th className="px-4 py-3">Response ID</th>
+                              <th className="px-4 py-3">Submitted At</th>
+                              <th className="px-4 py-3">Question</th>
+                              <th className="px-4 py-3">Performance</th>
+                              <th className="px-4 py-3">Importance</th>
+                              <th className="px-4 py-3">Reason</th>
+                              <th className="px-4 py-3">Quadrant</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200">
+                            {csvRows.map((row) => (
+                              <tr key={`${row.response_id}-${row.question_text}`}>
+                                <td className="px-4 py-3 text-slate-600">{row.response_id}</td>
+                                <td className="px-4 py-3 text-slate-600">{row.submitted_at}</td>
+                                <td className="px-4 py-3 font-medium text-slate-900">{row.question_text}</td>
+                                <td className="px-4 py-3 text-slate-600">{row.performance}</td>
+                                <td className="px-4 py-3 text-slate-600">{row.importance}</td>
+                                <td className="px-4 py-3 text-slate-600">{row.reason || '-'}</td>
+                                <td className="px-4 py-3 text-slate-600">
+                                  {quadrantMap.get(row.question_id) ?? '-'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </section>
+                </>
+              ) : null}
             </>
           )}
         </section>
