@@ -60,6 +60,13 @@ type ExecutiveKpi = {
   tone: 'default' | 'warning' | 'accent'
 }
 
+type QuadrantInsight = {
+  label: string
+  title: string
+  tone: 'warning' | 'success' | 'muted' | 'accent'
+  questions: string[]
+}
+
 type AdminUserRow = {
   id: string
   full_name: string | null
@@ -397,6 +404,59 @@ function AdminDashboard() {
     ] satisfies ExecutiveKpi[]
   }, [criticalFeedback.length, filteredResponses])
 
+  const quadrantInsights = useMemo(() => {
+    const performanceCutoff = means.performance > 0 ? means.performance : 3
+    const importanceCutoff = means.importance > 0 ? means.importance : 3
+
+    const groups = {
+      q1: [] as string[],
+      q2: [] as string[],
+      q3: [] as string[],
+      q4: [] as string[],
+    }
+
+    for (const point of ipaPoints) {
+      const isHighPerformance = point.performance >= performanceCutoff
+      const isHighImportance = point.importance >= importanceCutoff
+
+      if (isHighImportance && !isHighPerformance) {
+        groups.q1.push(point.question_text)
+        continue
+      }
+
+      if (isHighImportance && isHighPerformance) {
+        groups.q2.push(point.question_text)
+        continue
+      }
+
+      if (!isHighImportance && !isHighPerformance) {
+        groups.q3.push(point.question_text)
+        continue
+      }
+
+      groups.q4.push(point.question_text)
+    }
+
+    const createInsight = (
+      label: string,
+      title: string,
+      tone: QuadrantInsight['tone'],
+      questions: string[],
+    ): QuadrantInsight => ({
+      label,
+      title,
+      tone,
+      questions,
+    })
+
+    return [
+      createInsight('Kuadran I', 'Prioritas Utama', 'warning', groups.q1),
+      createInsight('Kuadran II', 'Pertahankan Prestasi', 'success', groups.q2),
+      createInsight('Kuadran III', 'Prioritas Rendah', 'muted', groups.q3),
+      createInsight('Kuadran IV', 'Berlebihan', 'accent', groups.q4),
+    ]
+  }, [ipaPoints, means.importance, means.performance])
+
   function handlePrintReport() {
     window.print()
   }
@@ -684,6 +744,79 @@ function AdminDashboard() {
                         ))}
                       </div>
                     </div>
+                  </div>
+                </section>
+              ) : null}
+
+              {activeTab === 'analytics' ? (
+                <section className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid">
+                  <div className="flex flex-col gap-2">
+                    <h2 className="text-lg font-semibold text-slate-900">
+                      IPA Quadrant Actionable Insights
+                    </h2>
+                    <p className="text-sm text-slate-600">
+                      Pertanyaan dikelompokkan otomatis berdasarkan garis pemotong mean Performance dan Importance pada data yang sudah difilter.
+                    </p>
+                  </div>
+
+                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    {quadrantInsights.map((quadrant) => {
+                      const toneClasses =
+                        quadrant.tone === 'warning'
+                          ? 'border-red-200 bg-red-50'
+                          : quadrant.tone === 'success'
+                            ? 'border-emerald-200 bg-emerald-50'
+                            : quadrant.tone === 'accent'
+                              ? 'border-[#003366]/15 bg-[#003366]/5'
+                              : 'border-amber-200 bg-amber-50'
+
+                      const titleClasses =
+                        quadrant.tone === 'warning'
+                          ? 'text-red-700'
+                          : quadrant.tone === 'success'
+                            ? 'text-emerald-700'
+                            : quadrant.tone === 'accent'
+                              ? 'text-[#003366]'
+                              : 'text-amber-700'
+
+                      return (
+                        <article
+                          key={quadrant.label}
+                          className={`rounded-[1.5rem] border p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)] print:shadow-none ${toneClasses}`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${titleClasses}`}>
+                                {quadrant.label}
+                              </p>
+                              <h3 className="mt-2 text-base font-semibold text-slate-900">
+                                {quadrant.title}
+                              </h3>
+                            </div>
+                            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                              {quadrant.questions.length}
+                            </span>
+                          </div>
+
+                          <div className="mt-4">
+                            {quadrant.questions.length ? (
+                              <ul className="space-y-2 text-sm leading-6 text-slate-700">
+                                {quadrant.questions.map((question) => (
+                                  <li key={question} className="flex gap-2">
+                                    <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${quadrant.tone === 'warning' ? 'bg-red-500' : quadrant.tone === 'success' ? 'bg-emerald-500' : quadrant.tone === 'accent' ? 'bg-[#003366]' : 'bg-amber-500'}`} />
+                                    <span>{question}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-sm leading-6 text-slate-600">
+                                Tidak ada indikator di kuadran ini.
+                              </p>
+                            )}
+                          </div>
+                        </article>
+                      )
+                    })}
                   </div>
                 </section>
               ) : null}
