@@ -289,36 +289,42 @@ function AdminDashboard() {
       }
     }
 
-    const points: IpaPoint[] = []
+    const questionAverages = Array.from(aggregates.entries()).map(([questionId, aggregate]) => ({
+      questionId,
+      questionText: aggregate.questionText,
+      performance: aggregate.performanceSum / aggregate.count,
+      importance: aggregate.importanceSum / aggregate.count,
+    }))
 
-    const averagePerformance =
-      rawRows.length > 0
-        ? rawRows.reduce((sum, row) => sum + row.performance, 0) / rawRows.length
+    const useFallbackCrosshair = questionAverages.length === 1
+    const averagePerformance = useFallbackCrosshair
+      ? 3
+      : questionAverages.length > 0
+        ? questionAverages.reduce((sum, row) => sum + row.performance, 0) / questionAverages.length
         : 0
-    const averageImportance =
-      rawRows.length > 0
-        ? rawRows.reduce((sum, row) => sum + row.importance, 0) / rawRows.length
+    const averageImportance = useFallbackCrosshair
+      ? 3
+      : questionAverages.length > 0
+        ? questionAverages.reduce((sum, row) => sum + row.importance, 0) / questionAverages.length
         : 0
 
-    for (const [questionId, aggregate] of aggregates.entries()) {
-      const performance = aggregate.performanceSum / aggregate.count
-      const importance = aggregate.importanceSum / aggregate.count
-      const isHighImportance = importance >= averageImportance
-      const isHighPerformance = performance >= averagePerformance
+    const points: IpaPoint[] = questionAverages.map((question) => {
+      const isHighImportance = question.importance >= averageImportance
+      const isHighPerformance = question.performance >= averagePerformance
 
       let quadrant = 'Q3: Prioritas Rendah'
       if (isHighImportance && !isHighPerformance) quadrant = 'Q1: Prioritas Utama'
       if (isHighImportance && isHighPerformance) quadrant = 'Q2: Pertahankan Prestasi'
       if (!isHighImportance && isHighPerformance) quadrant = 'Q4: Berlebihan'
 
-      points.push({
-        question_id: questionId,
-        question_text: aggregate.questionText,
-        performance,
-        importance,
+      return {
+        question_id: question.questionId,
+        question_text: question.questionText,
+        performance: question.performance,
+        importance: question.importance,
         quadrant,
-      })
-    }
+      }
+    })
 
     return {
       ipaPoints: points,
