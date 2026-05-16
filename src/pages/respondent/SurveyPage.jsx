@@ -4,7 +4,9 @@ const SurveyPage = () => {
     const navigate = useNavigate();
 
     return (
-        <div>hai</div>
+        <div className="px-12 py-10">
+            hai ini survey pageee
+        </div>
     );
 };
 

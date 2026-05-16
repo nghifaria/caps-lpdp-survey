@@ -12,28 +12,11 @@ const AdminTopbar = () => {
 
     return (
         <header className="sticky top-0 z-50 bg-light-grey shadow-sm">
-            <div className="flex h-24 items-center justify-between px-6 md:px-10">
-                {/* Logo */}
-                <div className="flex items-center gap-3">
-                    <img
-                        src={logo}
-                        alt="LPDP Logo"
-                        className="h-12 w-auto object-contain"/>
+            <div className="flex h-24 items-center justify-end px-6 md:px-10">
 
-                    <div className="leading-tight">
-                        <h1 className="text-md font-semibold text-[#DE7A49]">
-                            Survey
-                        </h1>
-
-                        <h1 className="text-md font-semibold text-[#DE7A49]">
-                            Awardee LPDP
-                        </h1>
-
-                    </div>
-                </div>
 
                 <div>
-                    <h1 className="text-md font-medium text-ash md:text-lg">
+                    <h1 className="text-md font-medium text-ash md:text-md">
                         {formattedDate}
                     </h1>
                 </div>

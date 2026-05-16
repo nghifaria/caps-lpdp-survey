@@ -2,7 +2,10 @@ import { useNavigate } from "react-router-dom";
 
 const DashboardPage = () => {
     return (
-        <div>hai ini dashboarddd</div>
+        <div>
+            <div>hai ini dashboarddd</div>
+        </div>
+        
     );
 };
 

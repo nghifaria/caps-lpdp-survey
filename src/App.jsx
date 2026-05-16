@@ -1,14 +1,12 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // auth pages
-{/* import LoginPage from './pages/auth/LoginPage';
+import LoginPage from './pages/auth/LoginPage';
 import SignUpPage from './pages/auth/SignUpPage';
-*/}
 
 import AdminLayout from './components/layout/AdminLayout';
 import DashboardPage from './pages/admin/DashboardPage';
 
-{/*
 // admin pages
 import CreateSurvey from './pages/admin/CreateSurvey';
 import ReportsPage from './pages/admin/ReportsPage';
@@ -16,7 +14,7 @@ import SurveyListPage from './pages/admin/SurveyListPage';
 import SurveyDetailPage from './pages/admin/SurveyDetailPage';
 import RespondentsPage from './pages/admin/RespondentsPage';
 import RespondentsDetailPage from './pages/admin/RespondentsDetailPage';
-*/}
+
 // respondent pages
 import RespLayout from './components/layout/RespLayout';
 import HomePage from './pages/respondent/HomePage';
@@ -29,12 +27,8 @@ function App() {
     <div className="min-h-screen w-full">
       <Routes>
         {/* public & auth routes */}
-        {/*
-        <Route path="/auth">
-          <Route path="login" element={<LoginPage />} />
-          <Route path="signup" element={<SignUpPage />} />
-        </Route>
-        */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
 
         {/* respondent routes */}
         <Route element={<RespLayout />}>
@@ -47,18 +41,13 @@ function App() {
         {/* admin routes */}
         <Route element={<AdminLayout />}>
           <Route path="/admin" element={<DashboardPage />} />
+          <Route path="/admin/surveys" element={<SurveyListPage />} />
+          <Route path="/admin/surveys/create" element={<CreateSurvey />} />
+          <Route path="/admin/surveys/:id" element={<SurveyDetailPage />} />
+          <Route path="/admin/reports" element={<ReportsPage />} />
+          <Route path="/admin/respondents" element={<RespondentsPage />} />
+          <Route path="/admin/respondents/:id" element={<RespondentsDetailPage />} />
         </Route>
-        {/*
-        <Route element={<AdminLayout />}>
-          <Route path="/admin" element={<DashboardPage />} />
-          <Route path="surveys" element={<SurveyListPage />} />
-          <Route path="surveys/create" element={<CreateSurvey />} />
-          <Route path="surveys/:id" element={<SurveyDetailPage />} />
-          <Route path="reports" element={<ReportsPage />} />
-          <Route path="respondents" element={<RespondentsPage />} />
-          <Route path="respondents/:id" element={<RespondentsDetailPage />} />
-        </Route>
-        */}
 
         {/* 404 Not Found - Redirect ke Home */}
         {/*
