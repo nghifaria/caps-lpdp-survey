@@ -208,6 +208,21 @@ create policy "questions_select_public"
   to anon, authenticated
   using (true);
 
+drop policy if exists "questions_insert_admin" on public.questions;
+drop policy if exists "questions_delete_admin" on public.questions;
+
+create policy "questions_insert_admin"
+  on public.questions
+  for insert
+  to authenticated
+  with check (public.is_admin());
+
+create policy "questions_delete_admin"
+  on public.questions
+  for delete
+  to authenticated
+  using (public.is_admin());
+
 create policy "responses_select_authenticated"
   on public.responses
   for select

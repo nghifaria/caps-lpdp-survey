@@ -75,6 +75,8 @@ type AdminUserRow = {
   updated_at: string
 }
 
+type SurveyQuestionFormType = 'dual_likert' | 'text'
+
 const provinceOptions = ['Jakarta', 'Jawa Barat', 'Jawa Tengah', 'Jawa Timur']
 
 type AdminRpcClient = {
@@ -97,6 +99,7 @@ function AdminDashboard() {
   const navigate = useNavigate()
   const [survey, setSurvey] = useState<SurveyRow | null>(null)
   const [surveys, setSurveys] = useState<SurveyRow[]>([])
+  const [selectedSurveyId, setSelectedSurveyId] = useState<string | null>(null)
   const [responses, setResponses] = useState<ResponseWithAnswers[]>([])
   const [selectedProvince, setSelectedProvince] = useState('all')
   const [activeTab, setActiveTab] = useState<'analytics' | 'critical-feedback' | 'users' | 'manage-surveys'>('analytics')
@@ -113,11 +116,18 @@ function AdminDashboard() {
   const [newSurveyTitle, setNewSurveyTitle] = useState('')
   const [creatingSurvey, setCreatingSurvey] = useState(false)
   const [deletingSurveyId, setDeletingSurveyId] = useState<string | null>(null)
+  const [questions, setQuestions] = useState<QuestionRow[]>([])
+  const [questionsLoading, setQuestionsLoading] = useState(false)
+  const [questionsError, setQuestionsError] = useState<string | null>(null)
+  const [newQuestionText, setNewQuestionText] = useState('')
+  const [newQuestionType, setNewQuestionType] = useState<SurveyQuestionFormType>('dual_likert')
+  const [newQuestionRequired, setNewQuestionRequired] = useState(true)
+  const [creatingQuestion, setCreatingQuestion] = useState(false)
+  const [deletingQuestionId, setDeletingQuestionId] = useState<string | null>(null)
 
   async function loadSurveys() {
     setSurveysLoading(true)
     setSurveysError(null)
-
     const { data, error: surveyListError } = await supabase
       .from('surveys')
       .select('id, title, is_active, created_at')
@@ -131,6 +141,26 @@ function AdminDashboard() {
     }
 
     setSurveysLoading(false)
+  }
+
+  async function loadQuestions(surveyId: string) {
+    setQuestionsLoading(true)
+    setQuestionsError(null)
+
+    const { data, error: questionListError } = await supabase
+      .from('questions')
+      .select('id, survey_id, question_text, question_type, options, is_required, branching_logic')
+      .eq('survey_id', surveyId)
+      .order('question_text', { ascending: true })
+
+    if (questionListError) {
+      setQuestionsError(questionListError.message)
+      setQuestions([])
+    } else {
+      setQuestions((data ?? []) as QuestionRow[])
+    }
+
+    setQuestionsLoading(false)
   }
 
   useEffect(() => {
@@ -614,9 +644,111 @@ function AdminDashboard() {
       setResponses([])
     }
 
+    if (selectedSurveyId === surveyId) {
+      setSelectedSurveyId(null)
+      setQuestions([])
+      setQuestionsError(null)
+    }
+
     await loadSurveys()
     toast.success('Survei berhasil dihapus.')
     setDeletingSurveyId(null)
+  }
+
+  async function handleSelectSurveyQuestions(surveyId: string) {
+    setSelectedSurveyId(surveyId)
+    setNewQuestionText('')
+    setNewQuestionType('dual_likert')
+    setNewQuestionRequired(true)
+    await loadQuestions(surveyId)
+  }
+
+  async function handleCreateQuestion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (!selectedSurveyId) {
+      toast.error('Pilih survei terlebih dahulu.')
+      return
+    }
+
+    const questionText = newQuestionText.trim()
+
+    if (!questionText) {
+      toast.error('Teks pertanyaan wajib diisi.')
+      return
+    }
+
+    setCreatingQuestion(true)
+
+    const branchingLogic =
+      newQuestionType === 'dual_likert'
+        ? {
+            show_reason_if: {
+              field: 'score_performance',
+              operator: '<',
+              value: 3,
+              target: 'reason',
+            },
+          }
+        : null
+
+    const { error: insertError } = await supabase
+      .from('questions')
+      .insert([
+        {
+          survey_id: selectedSurveyId,
+          question_text: questionText,
+          question_type: newQuestionType,
+          is_required: newQuestionRequired,
+          options: null,
+          branching_logic: branchingLogic,
+        } as never,
+      ])
+
+    if (insertError) {
+      toast.error(insertError.message)
+      setCreatingQuestion(false)
+      return
+    }
+
+    setNewQuestionText('')
+    setNewQuestionType('dual_likert')
+    setNewQuestionRequired(true)
+    await loadQuestions(selectedSurveyId)
+    toast.success('Pertanyaan baru berhasil ditambahkan.')
+    setCreatingQuestion(false)
+  }
+
+  async function handleDeleteQuestion(questionId: string) {
+    if (!selectedSurveyId) {
+      return
+    }
+
+    const targetQuestion = questions.find((question) => question.id === questionId)
+
+    if (!targetQuestion) {
+      return
+    }
+
+    const confirmed = window.confirm(`Hapus pertanyaan "${targetQuestion.question_text}"?`)
+
+    if (!confirmed) {
+      return
+    }
+
+    setDeletingQuestionId(questionId)
+
+    const { error: deleteError } = await supabase.from('questions').delete().eq('id', questionId)
+
+    if (deleteError) {
+      toast.error(deleteError.message)
+      setDeletingQuestionId(null)
+      return
+    }
+
+    await loadQuestions(selectedSurveyId)
+    toast.success('Pertanyaan berhasil dihapus.')
+    setDeletingQuestionId(null)
   }
 
   async function handleLogout() {
@@ -651,6 +783,10 @@ function AdminDashboard() {
     link.click()
     URL.revokeObjectURL(url)
   }
+
+  const selectedSurvey = selectedSurveyId
+    ? surveys.find((item) => item.id === selectedSurveyId) ?? null
+    : null
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,_#f8fbff_0%,_#eef4fb_100%)] px-4 py-10 text-slate-900 print:bg-white print:px-0 print:py-0 sm:px-6 lg:px-8">
@@ -1112,14 +1248,27 @@ function AdminDashboard() {
                                   })}
                                 </td>
                                 <td className="px-4 py-3 text-slate-600">
-                                  <button
-                                    type="button"
-                                    onClick={() => void handleDeleteSurvey(item.id)}
-                                    disabled={deletingSurveyId === item.id}
-                                    className="inline-flex items-center justify-center rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-                                  >
-                                    {deletingSurveyId === item.id ? 'Menghapus...' : 'Hapus Survei'}
-                                  </button>
+                                  <div className="flex flex-wrap gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleSelectSurveyQuestions(item.id)}
+                                      className={`inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition ${
+                                        selectedSurveyId === item.id
+                                          ? 'bg-[#003366] text-white'
+                                          : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                      }`}
+                                    >
+                                      Kelola Pertanyaan
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleDeleteSurvey(item.id)}
+                                      disabled={deletingSurveyId === item.id}
+                                      className="inline-flex items-center justify-center rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                      {deletingSurveyId === item.id ? 'Menghapus...' : 'Hapus Survei'}
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}
@@ -1128,6 +1277,137 @@ function AdminDashboard() {
                       </div>
                     </div>
                   )}
+
+                  <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-white p-4 sm:p-5">
+                    {selectedSurvey ? (
+                      <>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#F97316]">
+                              Detail Pertanyaan
+                            </p>
+                            <h3 className="mt-2 text-lg font-semibold text-slate-900">
+                              {selectedSurvey.title}
+                            </h3>
+                          </div>
+                          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600">
+                            {questions.length} pertanyaan
+                          </span>
+                        </div>
+
+                        <form
+                          onSubmit={(event) => void handleCreateQuestion(event)}
+                          className="mt-5 grid gap-4 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[1.4fr_0.7fr_0.6fr_auto] lg:items-end"
+                        >
+                          <label className="block text-sm font-medium text-slate-700 lg:col-span-1">
+                            Teks Pertanyaan
+                            <input
+                              type="text"
+                              value={newQuestionText}
+                              onChange={(event) => setNewQuestionText(event.target.value)}
+                              placeholder="Contoh: Bagaimana penilaian Anda terhadap layanan ini?"
+                              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                            />
+                          </label>
+
+                          <label className="block text-sm font-medium text-slate-700">
+                            Tipe Data
+                            <select
+                              value={newQuestionType}
+                              onChange={(event) => setNewQuestionType(event.target.value as SurveyQuestionFormType)}
+                              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                            >
+                              <option value="dual_likert">Matriks IPA / Dual Likert</option>
+                              <option value="text">Isian Bebas / Esai</option>
+                            </select>
+                          </label>
+
+                          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
+                            <input
+                              type="checkbox"
+                              checked={newQuestionRequired}
+                              onChange={(event) => setNewQuestionRequired(event.target.checked)}
+                              className="h-4 w-4 rounded border-slate-300 text-[#003366] focus:ring-[#F97316]"
+                            />
+                            Wajib Diisi
+                          </label>
+
+                          <button
+                            type="submit"
+                            disabled={creatingQuestion}
+                            className="inline-flex items-center justify-center rounded-full bg-[#003366] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0a447f] disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {creatingQuestion ? 'Menyimpan...' : 'Tambah Pertanyaan'}
+                          </button>
+                        </form>
+
+                        {questionsLoading ? (
+                          <div className="mt-5">
+                            <LoadingSpinner />
+                          </div>
+                        ) : questionsError ? (
+                          <p className="mt-5 text-sm text-red-600">{questionsError}</p>
+                        ) : questions.length ? (
+                          <div className="mt-5 overflow-hidden rounded-[1.25rem] border border-slate-200">
+                            <div className="overflow-x-auto">
+                              <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                                <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500">
+                                  <tr>
+                                    <th className="px-4 py-3">Teks</th>
+                                    <th className="px-4 py-3">Tipe</th>
+                                    <th className="px-4 py-3">Wajib</th>
+                                    <th className="px-4 py-3">Aksi</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200 bg-white">
+                                  {questions.map((question) => (
+                                    <tr key={question.id}>
+                                      <td className="px-4 py-3 font-medium text-slate-900">
+                                        {question.question_text}
+                                      </td>
+                                      <td className="px-4 py-3 text-slate-600">
+                                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">
+                                          {question.question_type === 'dual_likert'
+                                            ? 'Dual Likert'
+                                            : 'Esai'}
+                                        </span>
+                                      </td>
+                                      <td className="px-4 py-3 text-slate-600">
+                                        <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${question.is_required ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                                          {question.is_required ? 'Ya' : 'Tidak'}
+                                        </span>
+                                      </td>
+                                      <td className="px-4 py-3 text-slate-600">
+                                        <button
+                                          type="button"
+                                          onClick={() => void handleDeleteQuestion(question.id)}
+                                          disabled={deletingQuestionId === question.id}
+                                          className="inline-flex items-center justify-center rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                          {deletingQuestionId === question.id ? '...' : 'Hapus'}
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-5 rounded-[1.25rem] border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-600">
+                            Belum ada pertanyaan untuk survei ini.
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="py-10 text-center">
+                        <p className="text-base font-semibold text-slate-900">Pilih survei untuk mengelola pertanyaan.</p>
+                        <p className="mt-2 text-sm leading-7 text-slate-600">
+                          Klik tombol Kelola Pertanyaan pada baris survei yang ingin diedit.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </section>
               ) : null}
 
