@@ -56,17 +56,17 @@ function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#003366]/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-slate-200 bg-gray-50/40 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-        <Link to="/" className="flex items-center gap-3 text-white">
-          <div className="flex h-12 w-32 items-center justify-center overflow-hidden rounded-2xl bg-white/10 px-2 ring-1 ring-white/15 sm:w-36">
+        <Link to="/" className="flex items-center gap-3 text-[#003366]">
+          <div className="flex h-12 w-32 items-center justify-center overflow-hidden rounded-2xl bg-white px-2 ring-1 ring-slate-200 sm:w-36">
             <img src="/logo_lpdp.png" alt="LPDP" className="h-full w-full object-contain" />
           </div>
           <div className="leading-tight">
-            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-white/70">
+            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-[#003366]/70">
               LPDP
             </p>
-            <p className="text-base font-medium text-white">Survey Platform</p>
+            <p className="text-base font-medium text-[#003366]">Survey Platform</p>
           </div>
         </Link>
 
@@ -75,8 +75,8 @@ function Navbar() {
             <Link
               key={item.label}
               to={item.href}
-              className={`text-sm font-medium transition hover:text-white ${
-                isActiveLink(item.href) ? 'text-white font-semibold' : 'text-white/75'
+              className={`text-sm font-medium transition hover:text-[#F97316] ${
+                isActiveLink(item.href) ? 'font-semibold text-[#003366]' : 'text-[#003366]/75'
               }`}
             >
               {item.label}
@@ -84,8 +84,8 @@ function Navbar() {
           ))}
           <Link
             to="/admin/login"
-            className={`text-sm font-medium transition hover:text-white ${
-              isActiveLink('/admin/login') ? 'text-white font-semibold' : 'text-white/75'
+            className={`text-sm font-medium transition hover:text-[#F97316] ${
+              isActiveLink('/admin/login') ? 'font-semibold text-[#003366]' : 'text-[#003366]/75'
             }`}
           >
             Admin
@@ -94,8 +94,8 @@ function Navbar() {
             <>
               <Link
                 to="/profile"
-                className={`text-sm font-medium transition hover:text-white ${
-                  isActiveLink('/profile') ? 'text-white font-semibold' : 'text-white/75'
+                className={`text-sm font-medium transition hover:text-[#F97316] ${
+                  isActiveLink('/profile') ? 'font-semibold text-[#003366]' : 'text-[#003366]/75'
                 }`}
               >
                 Profil
@@ -103,7 +103,7 @@ function Navbar() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="text-sm font-medium text-white/75 transition hover:text-white"
+                className="text-sm font-medium text-[#003366]/75 transition hover:text-[#F97316]"
               >
                 Logout
               </button>
@@ -111,7 +111,7 @@ function Navbar() {
           ) : (
             <Link
               to="/login"
-              className="text-sm font-medium text-white/75 transition hover:text-white"
+              className="text-sm font-medium text-[#003366]/75 transition hover:text-[#F97316]"
             >
               Login
             </Link>

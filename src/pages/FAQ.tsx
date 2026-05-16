@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import Navbar from '../components/Navbar'
 
 type FaqItem = {
   id: string
@@ -48,14 +48,11 @@ function FAQ() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FFFCF4] px-5 py-16 text-center text-[#242428]">
-      <div className="mx-auto max-w-6xl">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-[#003366] transition hover:text-[#F97316]">
-          <span aria-hidden="true">←</span>
-          Back to Home
-        </Link>
+    <main className="min-h-screen bg-[#FFFCF4] text-center text-[#242428]">
+      <Navbar />
 
-        <h1 className="mb-5 mt-8 text-4xl font-bold text-[#003366] md:text-5xl">FAQ</h1>
+      <div className="mx-auto max-w-6xl px-5 py-16">
+        <h1 className="mb-5 text-4xl font-bold text-[#003366] md:text-5xl">FAQ</h1>
         <p className="mx-auto mb-10 max-w-3xl text-base leading-7 text-slate-700 md:text-lg">
           Temukan jawaban singkat untuk pertanyaan umum sebelum mulai mengisi survei.
         </p>

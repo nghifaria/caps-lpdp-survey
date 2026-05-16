@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import Navbar from '../components/Navbar'
 
 type GuidelineStep = {
   id: string
@@ -19,14 +19,11 @@ const guidelineSteps: GuidelineStep[] = [
 
 function Guideline() {
   return (
-    <main className="min-h-screen bg-[#FFFCF4] px-5 py-16 text-[#242428]">
-      <div className="mx-auto max-w-6xl text-center">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-[#003366] transition hover:text-[#F97316]">
-          <span aria-hidden="true">←</span>
-          Back to Home
-        </Link>
+    <main className="min-h-screen bg-[#FFFCF4] text-[#242428]">
+      <Navbar />
 
-        <h1 className="mb-5 mt-8 text-4xl font-bold uppercase text-[#003366] md:text-6xl">
+      <div className="mx-auto max-w-6xl px-5 py-16 text-center">
+        <h1 className="mb-5 text-4xl font-bold uppercase text-[#003366] md:text-6xl">
           GUIDELINE
         </h1>
 
