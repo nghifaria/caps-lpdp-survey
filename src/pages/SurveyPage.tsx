@@ -9,6 +9,7 @@ type SurveyRow = Database['public']['Tables']['surveys']['Row']
 type QuestionRow = Database['public']['Tables']['questions']['Row']
 type AnswerInsert = Database['public']['Tables']['answers']['Insert']
 type ResponseInsert = Database['public']['Tables']['responses']['Insert']
+type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
 type AnswerDraft = {
   textValue: string
@@ -73,6 +74,49 @@ function isSurveyDraft(value: unknown): value is SurveyDraft {
   return typeof draft.currentStep === 'number' && typeof draft.answers === 'object'
 }
 
+function normalizeQuestionText(value: string) {
+  return value.toLowerCase()
+}
+
+function getProfileAutoFillValue(question: QuestionRow, profile: ProfileRow) {
+  const questionText = normalizeQuestionText(question.question_text)
+
+  if (questionText.includes('nama')) {
+    return profile.full_name?.trim() ?? ''
+  }
+
+  if (questionText.includes('nik')) {
+    return profile.nik?.trim() ?? ''
+  }
+
+  if (questionText.includes('lahir')) {
+    return profile.date_of_birth?.trim() ?? ''
+  }
+
+  if (questionText.includes('provinsi')) {
+    return profile.province?.trim() ?? ''
+  }
+
+  if (questionText.includes('universitas') || questionText.includes('perguruan tinggi')) {
+    return profile.university?.trim() ?? ''
+  }
+
+  return ''
+}
+
+function hasAnswerContent(answer: AnswerDraft | undefined) {
+  if (!answer) {
+    return false
+  }
+
+  return Boolean(
+    answer.textValue.trim() ||
+      answer.scoreImportance ||
+      answer.scorePerformance ||
+      answer.reason.trim(),
+  )
+}
+
 function SurveyPage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
@@ -81,6 +125,8 @@ function SurveyPage() {
   const [survey, setSurvey] = useState<SurveyRow | null>(null)
   const [questions, setQuestions] = useState<QuestionRow[]>([])
   const [answers, setAnswers] = useState<Record<string, AnswerDraft>>({})
+  const [awardeeProfile, setAwardeeProfile] = useState<ProfileRow | null>(null)
+  const [autoFilledQuestionIds, setAutoFilledQuestionIds] = useState<Set<string>>(new Set())
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -93,17 +139,7 @@ function SurveyPage() {
   const currentQuestion = questions[currentStep] ?? null
   const progressPercentage = totalQuestions > 0 ? ((currentStep + 1) / totalQuestions) * 100 : 0
   const hasDraftInteractionRef = useRef(false)
-  const hasStarted = useMemo(
-    () =>
-      Object.values(answers).some(
-        (answer) =>
-          Boolean(answer.textValue.trim()) ||
-          Boolean(answer.scoreImportance) ||
-          Boolean(answer.scorePerformance) ||
-          Boolean(answer.reason.trim()),
-      ),
-    [answers],
-  )
+  const hasStarted = useMemo(() => Object.values(answers).some(hasAnswerContent), [answers])
 
   function handleBackToHome() {
     if (hasStarted) {
@@ -140,6 +176,105 @@ function SurveyPage() {
 
     setDraftHydrated(true)
   }, [draftKey])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadProfile() {
+      const userResult = await supabase.auth.getUser()
+
+      if (cancelled) {
+        return
+      }
+
+      const userId = userResult.data.user?.id
+
+      if (!userId) {
+        setAwardeeProfile(null)
+        return
+      }
+
+      const profileResult = await supabase
+        .from('profiles')
+        .select('id, full_name, nik, date_of_birth, province, university, role, updated_at')
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (cancelled) {
+        return
+      }
+
+      if (profileResult.error) {
+        setAwardeeProfile(null)
+        return
+      }
+
+      setAwardeeProfile((profileResult.data as ProfileRow | null) ?? null)
+    }
+
+    void loadProfile()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!draftHydrated || !awardeeProfile || questions.length === 0) {
+      return
+    }
+
+    const nextAutoFilledIds = new Set<string>()
+
+    setAnswers((currentAnswers) => {
+      let hasChanges = false
+      const nextAnswers = { ...currentAnswers }
+
+      for (const question of questions) {
+        if (question.question_type !== 'short_text' && question.question_type !== 'dropdown') {
+          continue
+        }
+
+        const profileValue = getProfileAutoFillValue(question, awardeeProfile)
+
+        if (!profileValue) {
+          continue
+        }
+
+        const existingAnswer = currentAnswers[question.id]
+
+        if (hasAnswerContent(existingAnswer)) {
+          continue
+        }
+
+        nextAnswers[question.id] = {
+          ...(existingAnswer ?? emptyAnswerDraft),
+          textValue: profileValue,
+        }
+
+        nextAutoFilledIds.add(question.id)
+        hasChanges = true
+      }
+
+      if (!hasChanges) {
+        return currentAnswers
+      }
+
+      return nextAnswers
+    })
+
+    if (nextAutoFilledIds.size > 0) {
+      setAutoFilledQuestionIds((currentIds) => {
+        const mergedIds = new Set(currentIds)
+
+        nextAutoFilledIds.forEach((questionId) => {
+          mergedIds.add(questionId)
+        })
+
+        return mergedIds
+      })
+    }
+  }, [awardeeProfile, draftHydrated, questions])
 
   useEffect(() => {
     if (questions.length > 0 && currentStep > questions.length - 1) {
@@ -198,8 +333,13 @@ function SurveyPage() {
     return Number.isFinite(performanceScore) && performanceScore < rule.value
   }
 
+  function isAutoFilledQuestion(questionId: string) {
+    return autoFilledQuestionIds.has(questionId)
+  }
+
   function renderQuestionInput(question: QuestionRow) {
     const answer = answers[question.id] ?? emptyAnswerDraft
+    const autoFilled = isAutoFilledQuestion(question.id)
 
     if (question.question_type === 'short_text') {
       return (
@@ -207,10 +347,12 @@ function SurveyPage() {
           type="text"
           value={answer.textValue}
           onChange={(event) => updateAnswer(question.id, { textValue: event.target.value })}
-          disabled={!isSurveyActive}
+          readOnly={autoFilled}
+          disabled={!isSurveyActive || autoFilled}
           required={question.is_required}
+          aria-readonly={autoFilled}
           placeholder="Tulis jawaban di sini"
-          className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+          className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10 read-only:cursor-not-allowed read-only:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100"
         />
       )
     }
@@ -222,7 +364,7 @@ function SurveyPage() {
         <select
           value={answer.textValue}
           onChange={(event) => updateAnswer(question.id, { textValue: event.target.value })}
-          disabled={!isSurveyActive}
+          disabled={!isSurveyActive || autoFilled}
           required={question.is_required}
           className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10 disabled:cursor-not-allowed disabled:bg-slate-100"
         >
@@ -607,12 +749,17 @@ function SurveyPage() {
 
             <section className="mt-8 space-y-6 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6">
               {currentQuestion ? (
-                <article className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
+                  <article className="relative rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
+                    {isAutoFilledQuestion(currentQuestion.id) ? (
+                      <span className="absolute right-5 top-5 rounded-full bg-[#003366]/10 px-3 py-1 text-[11px] font-semibold text-[#003366]">
+                        ✓ Terisi otomatis dari profil Anda
+                      </span>
+                    ) : null}
                   <div className="flex items-start gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#003366] text-xs font-semibold text-white">
                       {currentStep + 1}
                     </div>
-                    <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 pr-40">
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="text-base font-semibold text-slate-900">
                           {currentQuestion.question_text}
