@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { supabase } from '../lib/supabase'
@@ -24,6 +24,11 @@ type BranchingLogic = {
     value?: number
     target?: string
   }
+}
+
+type SurveyDraft = {
+  answers: Record<string, AnswerDraft>
+  currentStep: number
 }
 
 const surveyTitle = 'Survei Kepuasan Layanan LPDP 2026'
@@ -58,16 +63,28 @@ function getDropdownOptions(question: QuestionRow) {
   return question.options.filter((option): option is string => typeof option === 'string')
 }
 
+function isSurveyDraft(value: unknown): value is SurveyDraft {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+
+  const draft = value as Partial<SurveyDraft>
+
+  return typeof draft.currentStep === 'number' && typeof draft.answers === 'object'
+}
+
 function SurveyPage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const surveyParam = id ?? ''
+  const draftKey = surveyParam ? `lpdp_survey_draft_${surveyParam}` : null
   const [survey, setSurvey] = useState<SurveyRow | null>(null)
   const [questions, setQuestions] = useState<QuestionRow[]>([])
   const [answers, setAnswers] = useState<Record<string, AnswerDraft>>({})
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [draftHydrated, setDraftHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
@@ -75,6 +92,7 @@ function SurveyPage() {
   const totalQuestions = questions.length
   const currentQuestion = questions[currentStep] ?? null
   const progressPercentage = totalQuestions > 0 ? ((currentStep + 1) / totalQuestions) * 100 : 0
+  const hasDraftInteractionRef = useRef(false)
   const hasStarted = useMemo(
     () =>
       Object.values(answers).some(
@@ -99,7 +117,52 @@ function SurveyPage() {
     navigate('/', { replace: true })
   }
 
+  useEffect(() => {
+    if (!draftKey) {
+      return
+    }
+
+    const storedDraft = localStorage.getItem(draftKey)
+
+    if (storedDraft) {
+      try {
+        const parsedDraft = JSON.parse(storedDraft) as unknown
+
+        if (isSurveyDraft(parsedDraft)) {
+          setAnswers(parsedDraft.answers ?? {})
+          setCurrentStep(Math.max(parsedDraft.currentStep, 0))
+          toast.info('Melanjutkan pengisian survei yang tersimpan...')
+        }
+      } catch {
+        localStorage.removeItem(draftKey)
+      }
+    }
+
+    setDraftHydrated(true)
+  }, [draftKey])
+
+  useEffect(() => {
+    if (questions.length > 0 && currentStep > questions.length - 1) {
+      setCurrentStep(questions.length - 1)
+    }
+  }, [currentStep, questions.length])
+
+  useEffect(() => {
+    if (!draftHydrated || !draftKey || !hasDraftInteractionRef.current) {
+      return
+    }
+
+    const draft: SurveyDraft = {
+      answers,
+      currentStep,
+    }
+
+    localStorage.setItem(draftKey, JSON.stringify(draft))
+  }, [answers, currentStep, draftHydrated, draftKey])
+
   function updateAnswer(questionId: string, patch: Partial<AnswerDraft>) {
+    hasDraftInteractionRef.current = true
+
     setAnswers((current) => {
       const existing = current[questionId] ?? emptyAnswerDraft
 
@@ -272,6 +335,7 @@ function SurveyPage() {
     }
 
     if (currentStep < totalQuestions - 1) {
+      hasDraftInteractionRef.current = true
       setCurrentStep((step) => Math.min(step + 1, totalQuestions - 1))
       return
     }
@@ -378,6 +442,10 @@ function SurveyPage() {
 
     setSuccessMessage('Jawaban berhasil dikirim. Terima kasih.')
     toast.success('Jawaban berhasil dikirim. Terima kasih.')
+    if (draftKey) {
+      localStorage.removeItem(draftKey)
+    }
+    hasDraftInteractionRef.current = false
     setAnswers({})
     setCurrentStep(0)
     setSubmitting(false)
@@ -571,7 +639,10 @@ function SurveyPage() {
                   {currentStep > 0 ? (
                     <button
                       type="button"
-                      onClick={() => setCurrentStep((step) => Math.max(step - 1, 0))}
+                      onClick={() => {
+                          hasDraftInteractionRef.current = true
+                        setCurrentStep((step) => Math.max(step - 1, 0))
+                      }}
                       disabled={submitting}
                       className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
