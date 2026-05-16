@@ -94,9 +94,9 @@ begin
   return query
     select
       profiles.id,
-      profiles.full_name,
-      users.email,
-      profiles.role,
+      profiles.full_name::text,
+      users.email::text,
+      profiles.role::text,
       profiles.updated_at
     from public.profiles as profiles
     join auth.users as users on users.id = profiles.id

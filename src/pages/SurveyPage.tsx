@@ -65,12 +65,16 @@ function SurveyPage() {
   const [survey, setSurvey] = useState<SurveyRow | null>(null)
   const [questions, setQuestions] = useState<QuestionRow[]>([])
   const [answers, setAnswers] = useState<Record<string, AnswerDraft>>({})
+  const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const isSurveyActive = survey?.is_active ?? false
+  const totalQuestions = questions.length
+  const currentQuestion = questions[currentStep] ?? null
+  const progressPercentage = totalQuestions > 0 ? ((currentStep + 1) / totalQuestions) * 100 : 0
   const hasStarted = useMemo(
     () =>
       Object.values(answers).some(
@@ -141,6 +145,7 @@ function SurveyPage() {
           value={answer.textValue}
           onChange={(event) => updateAnswer(question.id, { textValue: event.target.value })}
           disabled={!isSurveyActive}
+          required={question.is_required}
           placeholder="Tulis jawaban di sini"
           className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10 disabled:cursor-not-allowed disabled:bg-slate-100"
         />
@@ -155,6 +160,7 @@ function SurveyPage() {
           value={answer.textValue}
           onChange={(event) => updateAnswer(question.id, { textValue: event.target.value })}
           disabled={!isSurveyActive}
+          required={question.is_required}
           className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10 disabled:cursor-not-allowed disabled:bg-slate-100"
         >
           <option value="">Pilih salah satu provinsi</option>
@@ -201,6 +207,7 @@ function SurveyPage() {
                       updateAnswer(question.id, { scoreImportance: String(value) })
                     }
                     disabled={!isSurveyActive}
+                    required={question.is_required && value === 1}
                     className="h-4 w-4 border-slate-300 text-[#F97316] focus:ring-[#F97316] disabled:cursor-not-allowed"
                   />
                 </label>
@@ -225,6 +232,7 @@ function SurveyPage() {
                       updateAnswer(question.id, { scorePerformance: String(value) })
                     }
                     disabled={!isSurveyActive}
+                    required={question.is_required && value === 1}
                     className="h-4 w-4 border-slate-300 text-[#F97316] focus:ring-[#F97316] disabled:cursor-not-allowed"
                   />
                 </label>
@@ -258,6 +266,15 @@ function SurveyPage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    if (!currentQuestion) {
+      return
+    }
+
+    if (currentStep < totalQuestions - 1) {
+      setCurrentStep((step) => Math.min(step + 1, totalQuestions - 1))
+      return
+    }
 
     if (!survey) {
       return
@@ -362,6 +379,7 @@ function SurveyPage() {
     setSuccessMessage('Jawaban berhasil dikirim. Terima kasih.')
     toast.success('Jawaban berhasil dikirim. Terima kasih.')
     setAnswers({})
+    setCurrentStep(0)
     setSubmitting(false)
   }
 
@@ -431,6 +449,7 @@ function SurveyPage() {
         } else {
           setSurvey(resolvedSurvey)
           setQuestions(questionsResult.data ?? [])
+          setCurrentStep(0)
         }
         setLoading(false)
       }
@@ -485,6 +504,21 @@ function SurveyPage() {
               Isi pertanyaan berikut untuk membantu kami membaca pengalaman layanan LPDP secara lebih akurat.
             </p>
 
+            {totalQuestions > 0 ? (
+              <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                  <span>{`Pertanyaan ${currentStep + 1} dari ${totalQuestions}`}</span>
+                  <span>{`${Math.round(progressPercentage)}%`}</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                  <div
+                    className="h-full rounded-full bg-[#F97316] transition-all duration-300 ease-out"
+                    style={{ width: `${progressPercentage}%` }}
+                  />
+                </div>
+              </div>
+            ) : null}
+
             {!isSurveyActive ? (
               <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 Periode survei sudah ditutup. Jawaban baru tidak dapat dikirim.
@@ -504,42 +538,65 @@ function SurveyPage() {
             ) : null}
 
             <section className="mt-8 space-y-6 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6">
-              {questions.map((question, index) => (
-                <article key={question.id} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
+              {currentQuestion ? (
+                <article className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
                   <div className="flex items-start gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#003366] text-xs font-semibold text-white">
-                      {index + 1}
+                      {currentStep + 1}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="text-base font-semibold text-slate-900">
-                          {question.question_text}
+                          {currentQuestion.question_text}
                         </h2>
-                        {question.is_required ? (
+                        {currentQuestion.is_required ? (
                           <span className="rounded-full bg-[#F97316]/10 px-2.5 py-1 text-xs font-medium text-[#F97316]">
                             Wajib
                           </span>
                         ) : null}
                       </div>
                       <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
-                        {question.question_type}
+                        {currentQuestion.question_type}
                       </p>
-                      {renderQuestionInput(question)}
+                      {renderQuestionInput(currentQuestion)}
                     </div>
                   </div>
                 </article>
-              ))}
+              ) : null}
             </section>
 
             {isSurveyActive ? (
-              <div className="mt-8 flex items-center justify-end">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.35)] transition hover:-translate-y-0.5 hover:bg-[#ff8a3d] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-                >
-                  {submitting ? 'Mengirim...' : 'Submit Jawaban'}
-                </button>
+              <div className="mt-8 flex items-center justify-between gap-3">
+                <div>
+                  {currentStep > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep((step) => Math.max(step - 1, 0))}
+                      disabled={submitting}
+                      className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Kembali
+                    </button>
+                  ) : null}
+                </div>
+
+                {currentStep < totalQuestions - 1 ? (
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.35)] transition hover:-translate-y-0.5 hover:bg-[#ff8a3d] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                  >
+                    {submitting ? 'Memproses...' : 'Selanjutnya'}
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.35)] transition hover:-translate-y-0.5 hover:bg-[#ff8a3d] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                  >
+                    {submitting ? 'Mengirim...' : 'Kirim Survei'}
+                  </button>
+                )}
               </div>
             ) : null}
           </form>
