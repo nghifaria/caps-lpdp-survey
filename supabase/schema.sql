@@ -190,6 +190,18 @@ create policy "surveys_update_authenticated"
   using (true)
   with check (true);
 
+create policy "surveys_insert_admin"
+  on public.surveys
+  for insert
+  to authenticated
+  with check (public.is_admin());
+
+create policy "surveys_delete_admin"
+  on public.surveys
+  for delete
+  to authenticated
+  using (public.is_admin());
+
 create policy "questions_select_public"
   on public.questions
   for select

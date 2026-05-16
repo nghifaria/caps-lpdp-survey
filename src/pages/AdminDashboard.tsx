@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import {
   CartesianGrid,
   ReferenceLine,
@@ -96,9 +96,10 @@ const adminRpc = supabase as unknown as AdminRpcClient
 function AdminDashboard() {
   const navigate = useNavigate()
   const [survey, setSurvey] = useState<SurveyRow | null>(null)
+  const [surveys, setSurveys] = useState<SurveyRow[]>([])
   const [responses, setResponses] = useState<ResponseWithAnswers[]>([])
   const [selectedProvince, setSelectedProvince] = useState('all')
-  const [activeTab, setActiveTab] = useState<'analytics' | 'critical-feedback' | 'users'>('analytics')
+  const [activeTab, setActiveTab] = useState<'analytics' | 'critical-feedback' | 'users' | 'manage-surveys'>('analytics')
   const [loading, setLoading] = useState(true)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -107,6 +108,30 @@ function AdminDashboard() {
   const [usersError, setUsersError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null)
+  const [surveysLoading, setSurveysLoading] = useState(true)
+  const [surveysError, setSurveysError] = useState<string | null>(null)
+  const [newSurveyTitle, setNewSurveyTitle] = useState('')
+  const [creatingSurvey, setCreatingSurvey] = useState(false)
+  const [deletingSurveyId, setDeletingSurveyId] = useState<string | null>(null)
+
+  async function loadSurveys() {
+    setSurveysLoading(true)
+    setSurveysError(null)
+
+    const { data, error: surveyListError } = await supabase
+      .from('surveys')
+      .select('id, title, is_active, created_at')
+      .order('created_at', { ascending: false })
+
+    if (surveyListError) {
+      setSurveysError(surveyListError.message)
+      setSurveys([])
+    } else {
+      setSurveys((data ?? []) as SurveyRow[])
+    }
+
+    setSurveysLoading(false)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -176,6 +201,7 @@ function AdminDashboard() {
       }
 
       void loadUsers()
+      void loadSurveys()
 
       const surveyResult = await supabase
         .from('surveys')
@@ -532,6 +558,67 @@ function AdminDashboard() {
     setUpdatingStatus(false)
   }
 
+  async function handleCreateSurvey(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    const title = newSurveyTitle.trim()
+
+    if (!title) {
+      toast.error('Judul survei baru wajib diisi.')
+      return
+    }
+
+    setCreatingSurvey(true)
+
+    const { error: insertError } = await supabase
+      .from('surveys')
+      .insert([{ title, is_active: true } as never])
+
+    if (insertError) {
+      toast.error(insertError.message)
+      setCreatingSurvey(false)
+      return
+    }
+
+    setNewSurveyTitle('')
+    await loadSurveys()
+    toast.success('Survei baru berhasil dibuat.')
+    setCreatingSurvey(false)
+  }
+
+  async function handleDeleteSurvey(surveyId: string) {
+    const targetSurvey = surveys.find((item) => item.id === surveyId)
+
+    if (!targetSurvey) {
+      return
+    }
+
+    const confirmed = window.confirm(`Hapus survei "${targetSurvey.title}"? Tindakan ini tidak bisa dibatalkan.`)
+
+    if (!confirmed) {
+      return
+    }
+
+    setDeletingSurveyId(surveyId)
+
+    const { error: deleteError } = await supabase.from('surveys').delete().eq('id', surveyId)
+
+    if (deleteError) {
+      toast.error(deleteError.message)
+      setDeletingSurveyId(null)
+      return
+    }
+
+    if (survey?.id === surveyId) {
+      setSurvey(null)
+      setResponses([])
+    }
+
+    await loadSurveys()
+    toast.success('Survei berhasil dihapus.')
+    setDeletingSurveyId(null)
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut()
     navigate('/login', { replace: true })
@@ -638,6 +725,7 @@ function AdminDashboard() {
               { key: 'analytics', label: 'Analytics' },
               { key: 'critical-feedback', label: 'Critical Feedback' },
               { key: 'users', label: 'User Management' },
+              { key: 'manage-surveys', label: 'Kelola Survei' },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -944,6 +1032,94 @@ function AdminDashboard() {
                                     <option value="awardee">awardee</option>
                                     <option value="admin">admin</option>
                                   </select>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </section>
+              ) : null}
+
+              {activeTab === 'manage-surveys' ? (
+                <section className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6 print:hidden">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-lg font-semibold text-slate-900">Kelola Survei</h2>
+                      <p className="mt-1 text-sm text-slate-600">
+                        Buat survei baru atau hapus survei lama langsung dari dashboard.
+                      </p>
+                    </div>
+                  </div>
+
+                  <form
+                    onSubmit={(event) => void handleCreateSurvey(event)}
+                    className="mt-5 grid gap-3 rounded-[1.5rem] border border-slate-200 bg-white p-4 sm:grid-cols-[1fr_auto] sm:items-end"
+                  >
+                    <label className="block text-sm font-medium text-slate-700">
+                      Judul Survei Baru
+                      <input
+                        type="text"
+                        value={newSurveyTitle}
+                        onChange={(event) => setNewSurveyTitle(event.target.value)}
+                        placeholder="Contoh: Survei Kepuasan Layanan LPDP 2027"
+                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                      />
+                    </label>
+                    <button
+                      type="submit"
+                      disabled={creatingSurvey}
+                      className="inline-flex items-center justify-center rounded-full bg-[#003366] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0a447f] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {creatingSurvey ? 'Membuat...' : 'Buat Survei'}
+                    </button>
+                  </form>
+
+                  {surveysLoading ? (
+                    <div className="mt-5">
+                      <LoadingSpinner />
+                    </div>
+                  ) : surveysError ? (
+                    <p className="mt-5 text-sm text-red-600">{surveysError}</p>
+                  ) : (
+                    <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                          <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500">
+                            <tr>
+                              <th className="px-4 py-3">Judul</th>
+                              <th className="px-4 py-3">Status</th>
+                              <th className="px-4 py-3">Dibuat</th>
+                              <th className="px-4 py-3">Aksi</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200">
+                            {surveys.map((item) => (
+                              <tr key={item.id}>
+                                <td className="px-4 py-3 font-medium text-slate-900">{item.title}</td>
+                                <td className="px-4 py-3 text-slate-600">
+                                  <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${item.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                                    {item.is_active ? 'Aktif' : 'Nonaktif'}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-slate-600">
+                                  {new Date(item.created_at).toLocaleDateString('id-ID', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  })}
+                                </td>
+                                <td className="px-4 py-3 text-slate-600">
+                                  <button
+                                    type="button"
+                                    onClick={() => void handleDeleteSurvey(item.id)}
+                                    disabled={deletingSurveyId === item.id}
+                                    className="inline-flex items-center justify-center rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                  >
+                                    {deletingSurveyId === item.id ? 'Menghapus...' : 'Hapus Survei'}
+                                  </button>
                                 </td>
                               </tr>
                             ))}
