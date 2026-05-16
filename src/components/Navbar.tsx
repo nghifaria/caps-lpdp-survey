@@ -12,6 +12,7 @@ function Navbar() {
   const navigate = useNavigate()
   const location = useLocation()
   const [session, setSession] = useState<NavSession>(null)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -38,6 +39,7 @@ function Navbar() {
 
   async function handleLogout() {
     await supabase.auth.signOut()
+    setIsMenuOpen(false)
     navigate('/login', { replace: true })
   }
 
@@ -47,6 +49,12 @@ function Navbar() {
     { label: 'Guideline', href: '/guideline' },
   ]
 
+  const authItems = session
+    ? [
+        { label: 'Profil', href: '/profile' },
+      ]
+    : [{ label: 'Login', href: '/login' }]
+
   function isActiveLink(href: string) {
     if (href === '/') {
       return location.pathname === '/' && !location.hash
@@ -55,70 +63,102 @@ function Navbar() {
     return location.pathname === href
   }
 
+  function navLinkClass(href: string) {
+    return `transition-colors duration-300 font-medium hover:text-oren-muda ${
+      isActiveLink(href) ? 'text-oren-muda' : 'text-black'
+    }`
+  }
+
+  function mobileNavLinkClass(href: string) {
+    return `py-3 font-medium transition-colors duration-300 hover:text-oren-muda ${
+      isActiveLink(href) ? 'text-oren-muda' : 'text-black'
+    }`
+  }
+
+  function closeMenu() {
+    setIsMenuOpen(false)
+  }
+
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-gray-50/40 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-        <Link to="/" className="flex items-center gap-3 text-[#003366]">
-          <div className="flex h-12 w-32 items-center justify-center overflow-hidden rounded-2xl bg-white px-2 ring-1 ring-slate-200 sm:w-36">
-            <img src="/logo_lpdp.png" alt="LPDP" className="h-full w-full object-contain" />
-          </div>
-          <div className="leading-tight">
-            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-[#003366]/70">
-              LPDP
-            </p>
-            <p className="text-base font-medium text-[#003366]">Survey Platform</p>
-          </div>
+    <nav className="sticky top-0 z-50 bg-light-grey shadow-md">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5">
+        <Link to="/" className="flex items-center" onClick={closeMenu}>
+          <img
+            src="/logo_lpdp.png"
+            alt="LPDP Logo"
+            className="h-[50px] w-auto object-contain"
+          />
         </Link>
 
-        <nav aria-label="Primary" className="hidden items-center gap-8 md:flex">
+        <button
+          type="button"
+          onClick={() => setIsMenuOpen((current) => !current)}
+          className="text-3xl md:hidden"
+          aria-label="Toggle Menu"
+        >
+          ☰
+        </button>
+
+        <div className="hidden items-center gap-8 md:flex">
+          {navItems.map((item) => (
+            <Link key={item.label} to={item.href} className={navLinkClass(item.href)}>
+              {item.label}
+            </Link>
+          ))}
+
+          <Link to="/admin/login" className={navLinkClass('/admin/login')}>
+            Admin
+          </Link>
+
+          {authItems.map((item) => (
+            <Link key={item.label} to={item.href} className={navLinkClass(item.href)}>
+              {item.label}
+            </Link>
+          ))}
+
+          {session ? (
+            <button type="button" onClick={handleLogout} className={navLinkClass('/login')}>
+              Logout
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {isMenuOpen ? (
+        <div className="flex flex-col bg-light-grey px-4 pb-4 md:hidden">
           {navItems.map((item) => (
             <Link
               key={item.label}
               to={item.href}
-              className={`text-sm font-medium transition hover:text-[#F97316] ${
-                isActiveLink(item.href) ? 'font-semibold text-[#003366]' : 'text-[#003366]/75'
-              }`}
+              className={mobileNavLinkClass(item.href)}
+              onClick={closeMenu}
             >
               {item.label}
             </Link>
           ))}
-          <Link
-            to="/admin/login"
-            className={`text-sm font-medium transition hover:text-[#F97316] ${
-              isActiveLink('/admin/login') ? 'font-semibold text-[#003366]' : 'text-[#003366]/75'
-            }`}
-          >
+
+          <Link to="/admin/login" className={mobileNavLinkClass('/admin/login')} onClick={closeMenu}>
             Admin
           </Link>
-          {session ? (
-            <>
-              <Link
-                to="/profile"
-                className={`text-sm font-medium transition hover:text-[#F97316] ${
-                  isActiveLink('/profile') ? 'font-semibold text-[#003366]' : 'text-[#003366]/75'
-                }`}
-              >
-                Profil
-              </Link>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="text-sm font-medium text-[#003366]/75 transition hover:text-[#F97316]"
-              >
-                Logout
-              </button>
-            </>
-          ) : (
-            <Link
-              to="/login"
-              className="text-sm font-medium text-[#003366]/75 transition hover:text-[#F97316]"
-            >
-              Login
+
+          {authItems.map((item) => (
+            <Link key={item.label} to={item.href} className={mobileNavLinkClass(item.href)} onClick={closeMenu}>
+              {item.label}
             </Link>
-          )}
-        </nav>
-      </div>
-    </header>
+          ))}
+
+          {session ? (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="py-3 text-left font-medium transition-colors duration-300 hover:text-oren-muda text-black"
+            >
+              Logout
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </nav>
   )
 }
 

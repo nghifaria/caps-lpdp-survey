@@ -7,6 +7,14 @@ import type { Database } from '../types/database'
 type SurveyRow = Database['public']['Tables']['surveys']['Row']
 type UserRole = Database['public']['Tables']['profiles']['Row']['role']
 
+function formatSurveyDate(value: string) {
+  return new Intl.DateTimeFormat('id-ID', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(value))
+}
+
 function LandingPage() {
   const [homeRole, setHomeRole] = useState<UserRole | null>(null)
   const [availableSurveys, setAvailableSurveys] = useState<SurveyRow[]>([])
@@ -64,16 +72,6 @@ function LandingPage() {
     }
   }, [])
 
-  const primarySurvey = availableSurveys[0] ?? null
-  const primaryActionLabel = homeRole === 'admin' ? 'Ke Dashboard' : 'Daftar Survei'
-  const primaryActionHref =
-    homeRole === 'admin'
-      ? '/admin/dashboard'
-      : primarySurvey
-        ? `/survey/${primarySurvey.id}`
-        : '/login'
-  const showPrimaryAction = homeRole === 'admin' || Boolean(primarySurvey)
-
   return (
     <div className="min-h-screen bg-[#FFFCF4] text-white">
       <Navbar />
@@ -94,28 +92,78 @@ function LandingPage() {
             </h1>
 
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-              {showPrimaryAction ? (
-                <Link
-                  to={primaryActionHref}
-                  className="rounded-full border-2 border-white bg-[#F97316] px-8 py-3 text-lg font-semibold uppercase tracking-wide text-white transition-all duration-300 hover:-translate-y-1 hover:bg-[#ff8a3d] hover:shadow-lg"
-                >
-                  {primaryActionLabel}
-                </Link>
-              ) : (
-                <span className="rounded-full border-2 border-white/50 bg-white/10 px-8 py-3 text-lg font-semibold uppercase tracking-wide text-white/85">
-                  Belum ada survei aktif
-                </span>
-              )}
-
               <Link
                 to="/guideline"
                 className="rounded-full border-2 border-white bg-white/10 px-8 py-3 text-lg font-semibold uppercase tracking-wide text-white transition-all duration-300 hover:-translate-y-1 hover:bg-white/20 hover:shadow-lg"
               >
                 Guideline
               </Link>
+
+              {homeRole === 'admin' ? (
+                <Link
+                  to="/admin/dashboard"
+                  className="rounded-full border-2 border-white bg-[#F97316] px-8 py-3 text-lg font-semibold uppercase tracking-wide text-white transition-all duration-300 hover:-translate-y-1 hover:bg-[#ff8a3d] hover:shadow-lg"
+                >
+                  Ke Dashboard
+                </Link>
+              ) : null}
             </div>
           </div>
         </section>
+
+        {homeRole === 'awardee' ? (
+          <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+            <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
+                  Survey Hub
+                </p>
+                <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-[#003366]">
+                  Pilih kuesioner aktif yang ingin Anda isi
+                </h2>
+                <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
+                  Semua survei aktif ditampilkan di bawah ini. Klik kartu yang sesuai untuk memulai.
+                </p>
+              </div>
+            </div>
+
+            {availableSurveys.length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {availableSurveys.map((survey) => (
+                  <article
+                    key={survey.id}
+                    className="group rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(0,51,102,0.08)] transition hover:-translate-y-1 hover:border-[#F97316]/30"
+                  >
+                    <div className="flex h-full flex-col justify-between gap-6">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#F97316]">
+                          Survei Aktif
+                        </p>
+                        <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-[#003366]">
+                          {survey.title}
+                        </h3>
+                        <p className="mt-3 text-sm leading-7 text-slate-600">
+                          Dibuat pada {formatSurveyDate(survey.created_at)}
+                        </p>
+                      </div>
+
+                      <Link
+                        to={`/survey/${survey.id}`}
+                        className="inline-flex w-full items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.28)] transition hover:-translate-y-0.5 hover:bg-[#ff8a3d]"
+                      >
+                        Mulai Isi Survei
+                      </Link>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-[2rem] border border-slate-200 bg-white px-6 py-8 text-sm leading-7 text-slate-600 shadow-[0_24px_60px_rgba(0,51,102,0.08)]">
+                Saat ini tidak ada survei aktif untuk Anda.
+              </div>
+            )}
+          </section>
+        ) : null}
 
         <section className="flex min-h-[600px] flex-col md:flex-row">
           <div className="flex flex-1 flex-col justify-center bg-[linear-gradient(144deg,#2050A5_50%,#1C4999_50%)] px-8 py-14 text-white md:px-16">

@@ -32,18 +32,11 @@ type SurveyDraft = {
   currentStep: number
 }
 
-const surveyTitle = 'Survei Kepuasan Layanan LPDP 2026'
 const emptyAnswerDraft: AnswerDraft = {
   textValue: '',
   scoreImportance: '',
   scorePerformance: '',
   reason: '',
-}
-
-function isUuid(value: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    value,
-  )
 }
 
 function getBranchingLogic(question: QuestionRow) {
@@ -606,13 +599,11 @@ function SurveyPage() {
       setLoading(true)
       setError(null)
 
-      const baseQuery = supabase
+      const surveyResult = await supabase
         .from('surveys')
         .select('id, title, is_active, created_at')
-
-      const surveyResult = isUuid(surveyParam)
-        ? await baseQuery.eq('id', surveyParam).maybeSingle()
-        : await baseQuery.eq('title', surveyTitle).maybeSingle()
+        .eq('id', surveyParam)
+        .maybeSingle()
 
       if (surveyResult.error) {
         if (!cancelled) {
@@ -622,25 +613,11 @@ function SurveyPage() {
         return
       }
 
-      let resolvedSurvey: SurveyRow | null = (surveyResult.data as SurveyRow | null) ?? null
-
-      if (!resolvedSurvey) {
-        const fallbackResult = await baseQuery.eq('title', surveyTitle).maybeSingle()
-
-        if (fallbackResult.error) {
-          if (!cancelled) {
-            setError(fallbackResult.error.message)
-            setLoading(false)
-          }
-          return
-        }
-
-        resolvedSurvey = (fallbackResult.data as SurveyRow | null) ?? null
-      }
+      const resolvedSurvey = (surveyResult.data as SurveyRow | null) ?? null
 
       if (!resolvedSurvey) {
         if (!cancelled) {
-          setError('Data survey seed tidak ditemukan.')
+          setError('Survei tidak ditemukan.')
           setLoading(false)
         }
         return
