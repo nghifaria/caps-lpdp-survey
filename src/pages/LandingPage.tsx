@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import Hero from '../components/Hero'
+import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import StatCards from '../components/StatCards'
 import { supabase } from '../lib/supabase'
 import type { Database } from '../types/database'
 
@@ -10,21 +8,8 @@ type SurveyRow = Database['public']['Tables']['surveys']['Row']
 type UserRole = Database['public']['Tables']['profiles']['Row']['role']
 
 function LandingPage() {
-  const location = useLocation()
   const [homeRole, setHomeRole] = useState<UserRole | null>(null)
   const [availableSurveys, setAvailableSurveys] = useState<SurveyRow[]>([])
-
-  useEffect(() => {
-    if (!location.hash) {
-      return
-    }
-
-    const element = document.querySelector(location.hash)
-
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-  }, [location.hash])
 
   useEffect(() => {
     let active = true
@@ -79,109 +64,132 @@ function LandingPage() {
     }
   }, [])
 
+  const primarySurvey = availableSurveys[0] ?? null
+  const primaryActionLabel = homeRole === 'admin' ? 'Ke Dashboard' : 'Daftar Survei'
+  const primaryActionHref =
+    homeRole === 'admin'
+      ? '/admin/dashboard'
+      : primarySurvey
+        ? `/survey/${primarySurvey.id}`
+        : '/login'
+  const showPrimaryAction = homeRole === 'admin' || Boolean(primarySurvey)
+
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.18),_transparent_28%),linear-gradient(180deg,_#003366_0%,_#01213f_46%,_#07111f_100%)] text-white">
+    <div className="min-h-screen bg-[#FFFCF4] text-white">
       <Navbar />
 
       <main>
-        <Hero />
+        <section
+          className="relative flex min-h-screen items-end justify-center bg-cover bg-center bg-no-repeat px-5 pb-20"
+          style={{ backgroundImage: 'url(/hero_bg.png)' }}
+        >
+          <div className="absolute inset-0 bg-[#09111f]/42" />
 
-        {homeRole === 'admin' ? (
-          <section className="mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8">
-            <div className="rounded-[2rem] border border-white/10 bg-white/8 p-6 backdrop-blur-xl sm:p-8">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
-                    Admin View
-                  </p>
-                  <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">
-                    Ringkasan analitik dan akses dashboard
-                  </h2>
-                  <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
-                    Pantau respons, buka dashboard penuh, dan kelola role user dari satu tempat.
-                  </p>
-                </div>
+          <div className="relative z-10 text-center">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.4em] text-white/85">
+              LPDP Survey Platform
+            </p>
+            <h1 className="mb-8 text-4xl font-bold tracking-[0.06em] text-white drop-shadow-lg md:text-6xl">
+              SURVEI BEASISWA LPDP
+            </h1>
 
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              {showPrimaryAction ? (
                 <Link
-                  to="/admin/dashboard"
-                  className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.35)] transition hover:-translate-y-0.5 hover:bg-[#ff8a3d]"
+                  to={primaryActionHref}
+                  className="rounded-full border-2 border-white bg-[#F97316] px-8 py-3 text-lg font-semibold uppercase tracking-wide text-white transition-all duration-300 hover:-translate-y-1 hover:bg-[#ff8a3d] hover:shadow-lg"
                 >
-                  Ke Dashboard
+                  {primaryActionLabel}
                 </Link>
-              </div>
+              ) : (
+                <span className="rounded-full border-2 border-white/50 bg-white/10 px-8 py-3 text-lg font-semibold uppercase tracking-wide text-white/85">
+                  Belum ada survei aktif
+                </span>
+              )}
+
+              <Link
+                to="/guideline"
+                className="rounded-full border-2 border-white bg-white/10 px-8 py-3 text-lg font-semibold uppercase tracking-wide text-white transition-all duration-300 hover:-translate-y-1 hover:bg-white/20 hover:shadow-lg"
+              >
+                Guideline
+              </Link>
             </div>
-          </section>
-        ) : homeRole === 'awardee' ? (
-          <section className="mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8">
-            <div className="rounded-[2rem] border border-white/10 bg-white/8 p-6 backdrop-blur-xl sm:p-8">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
-                    Awardee View
-                  </p>
-                  <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">
-                    Survei yang tersedia untuk diisi
-                  </h2>
-                  <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
-                    Pilih survei aktif di bawah ini untuk melanjutkan pengisian.
-                  </p>
-                </div>
+          </div>
+        </section>
 
-                <Link
-                  to="/login"
-                  className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white/85 transition hover:border-white/25 hover:bg-white/10"
-                >
-                  Perbarui Login
-                </Link>
-              </div>
+        <section className="flex min-h-[600px] flex-col md:flex-row">
+          <div className="flex flex-1 flex-col justify-center bg-[linear-gradient(144deg,#2050A5_50%,#1C4999_50%)] px-8 py-14 text-white md:px-16">
+            <h2 className="mb-2 text-3xl font-bold tracking-wide">TINGKAT PARTISIPASI</h2>
+            <p className="mb-10 text-base opacity-90">per 16 May 2026</p>
 
-              <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {availableSurveys.length ? (
-                  availableSurveys.map((survey) => (
-                    <Link
-                      key={survey.id}
-                      to={`/survey/${survey.id}`}
-                      className="rounded-3xl border border-white/10 bg-[#003366]/70 p-5 transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-[#003366]/85"
-                    >
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#F97316]">
-                        Survei Aktif
-                      </p>
-                      <h3 className="mt-3 text-lg font-semibold text-white">{survey.title}</h3>
-                      <p className="mt-2 text-sm leading-6 text-white/72">
-                        Klik untuk mulai mengisi survei ini.
-                      </p>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="rounded-3xl border border-white/10 bg-[#003366]/70 p-5 text-sm leading-7 text-white/72 md:col-span-2 xl:col-span-3">
-                    Belum ada survei aktif yang tersedia saat ini.
-                  </div>
-                )}
-              </div>
+            <div className="mb-10">
+              <h3 className="-mb-1 text-6xl font-bold transition-all duration-500 md:text-8xl">
+                {String(availableSurveys.length).padStart(2, '0')}
+              </h3>
+              <p className="text-xl font-medium">Survei Aktif</p>
             </div>
-          </section>
-        ) : null}
 
-        <StatCards />
+            <div>
+              <h3 className="-mb-1 text-6xl font-bold transition-all duration-500 md:text-8xl">
+                {homeRole === 'admin' ? 'ADMIN' : homeRole === 'awardee' ? 'AWARDEE' : 'GUEST'}
+              </h3>
+              <p className="text-xl font-medium">Role Saat Ini</p>
+            </div>
+          </div>
 
-        <section id="faq" className="mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8">
-          <div className="rounded-[2rem] border border-white/10 bg-white/6 p-6 backdrop-blur-xl sm:p-8">
-            <h2 className="text-2xl font-semibold tracking-[-0.03em] text-white">FAQ</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-white/70">
-              Bagian ini disiapkan sebagai placeholder untuk pertanyaan umum sebelum alur survei
-              dan validasi data dihubungkan.
+          <div className="flex flex-1 flex-col justify-center bg-[#FFFCF4] px-8 py-14 text-[#242428] md:px-16">
+            <h2 className="mb-8 text-2xl font-bold leading-snug md:text-4xl">
+              SURVEI KEPUASAN PUBLIK ATAS LAYANAN BEASISWA LPDP TAHUN 2026
+            </h2>
+
+            <p className="mb-5 text-justify leading-7">
+              Selamat bergabung dalam Survei Kepuasan Publik terhadap Layanan LPDP.
+              Gunakan satu akun untuk melihat survei aktif atau membuka dashboard admin sesuai role.
+            </p>
+
+            <p className="mb-5 text-justify leading-7">
+              Sistem ini menyederhanakan akses bagi awardee dan admin tanpa memisahkan alur login.
+              Data yang Anda kirim akan digunakan untuk evaluasi layanan dan perbaikan proses.
+            </p>
+
+            <p className="mb-5 text-justify leading-7">
+              Jika Anda awardee, klik Daftar Survei untuk mulai mengisi survei aktif. Jika Anda admin,
+              gunakan tombol Ke Dashboard untuk membuka analitik dan pengelolaan.
+            </p>
+
+            <p className="text-justify leading-7">
+              Kami menjamin kerahasiaan identitas dan data yang Saudara berikan. Seluruh data akan
+              dianalisis secara agregat semata-mata untuk keperluan evaluasi.
             </p>
           </div>
         </section>
 
-        <section id="guideline" className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 lg:px-8">
-          <div className="rounded-[2rem] border border-white/10 bg-[#F97316]/10 p-6 text-white backdrop-blur-xl sm:p-8">
-            <h2 className="text-2xl font-semibold tracking-[-0.03em]">Guideline</h2>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-white/80">
-              Gunakan tombol Mulai Survei untuk melanjutkan ke alur pengisian berikutnya. Saat ini
-              tombol masih visual saja, sesuai tahap pengerjaan.
+        <section className="mx-auto grid max-w-7xl gap-4 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:px-8">
+          <Link
+            to="/faq"
+            className="rounded-[2rem] border border-slate-200 bg-white p-6 text-[#242428] shadow-[0_24px_60px_rgba(0,51,102,0.08)] transition hover:-translate-y-0.5"
+          >
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
+              FAQ
             </p>
-          </div>
+            <h3 className="mt-3 text-2xl font-semibold">Pertanyaan yang sering ditanyakan</h3>
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              Buka halaman FAQ untuk melihat penjelasan singkat seputar pengisian survei.
+            </p>
+          </Link>
+
+          <Link
+            to="/guideline"
+            className="rounded-[2rem] border border-slate-200 bg-[#003366] p-6 text-white shadow-[0_24px_60px_rgba(0,51,102,0.08)] transition hover:-translate-y-0.5"
+          >
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
+              Guideline
+            </p>
+            <h3 className="mt-3 text-2xl font-semibold">Panduan pengisian survei</h3>
+            <p className="mt-3 text-sm leading-7 text-white/75">
+              Lihat langkah pengisian dari awal sampai pengiriman jawaban.
+            </p>
+          </Link>
         </section>
       </main>
     </div>

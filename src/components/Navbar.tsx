@@ -43,21 +43,13 @@ function Navbar() {
 
   const navItems = [
     { label: 'Home', href: '/' },
-    { label: 'FAQ', href: '/#faq' },
-    { label: 'Guideline', href: '/#guideline' },
+    { label: 'FAQ', href: '/faq' },
+    { label: 'Guideline', href: '/guideline' },
   ]
 
   function isActiveLink(href: string) {
     if (href === '/') {
       return location.pathname === '/' && !location.hash
-    }
-
-    if (href === '/#faq') {
-      return location.pathname === '/' && location.hash === '#faq'
-    }
-
-    if (href === '/#guideline') {
-      return location.pathname === '/' && location.hash === '#guideline'
     }
 
     return location.pathname === href
@@ -67,8 +59,8 @@ function Navbar() {
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#003366]/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-3 text-white">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
-            <span className="text-sm font-semibold tracking-[0.24em] text-[#F97316]">LPDP</span>
+          <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-white/10 ring-1 ring-white/15">
+            <img src="/logo_lpdp.png" alt="LPDP" className="h-full w-full object-cover" />
           </div>
           <div className="leading-tight">
             <p className="text-sm font-semibold uppercase tracking-[0.28em] text-white/70">

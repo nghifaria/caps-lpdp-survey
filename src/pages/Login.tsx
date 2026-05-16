@@ -64,40 +64,36 @@ function Login() {
   }
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,_#eef4fb_0%,_#ffffff_100%)] px-4 py-10 text-slate-900 sm:px-6 lg:px-8">
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-5xl items-center justify-center">
-        <div className="grid w-full overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_24px_60px_rgba(0,51,102,0.08)] lg:grid-cols-[0.9fr_1.1fr]">
-          <section className="bg-[#003366] p-8 text-white sm:p-10">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-white/65">
-              Unified Access
-            </p>
-            <h1 className="mt-4 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
-              Login Admin & Awardee
-            </h1>
-            <p className="mt-4 max-w-md text-sm leading-7 text-white/75">
-              Gunakan satu form login. Admin akan diarahkan ke dashboard, awardee ke beranda survei.
-            </p>
-          </section>
+    <main className="flex min-h-screen w-full overflow-hidden bg-[#D97843] text-white">
+      <div className="relative hidden w-1/2 items-center justify-center bg-[#F5F5F5] lg:flex">
+        <img src="/login-image.png" alt="LPDP Awardee" className="h-screen w-full object-cover" />
+      </div>
 
-          <section className="p-8 sm:p-10">
-            <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-[#003366] transition hover:text-[#F97316]">
-              <span aria-hidden="true">←</span>
-              Back to Home
-            </Link>
+      <div className="relative flex w-full items-center justify-center bg-[#D97843] px-8 py-12 lg:w-1/2">
+        <div className="absolute right-0 top-0 h-full w-full bg-[#E08450] opacity-60 [clip-path:polygon(100%_0,100%_100%,40%_100%)]" />
 
-            <h2 className="text-2xl font-semibold tracking-[-0.03em] text-[#003366]">
-              Masuk ke Akun
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Gunakan email dan password yang terdaftar.
-            </p>
+        <div className="relative z-10 w-full max-w-md">
+          <div className="mb-8 flex items-center justify-center">
+            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-3xl bg-white/15 ring-1 ring-white/20">
+              <img src="/logo_lpdp.png" alt="LPDP" className="h-full w-full object-cover" />
+            </div>
+          </div>
 
-            {loading ? (
-              <LoadingSpinner />
-            ) : (
-              <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-                <div>
-                <label className="text-sm font-medium text-slate-700" htmlFor="login-email">
+          <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.35em] text-[#242428]/80">
+            Unified Access
+          </p>
+          <h1 className="mb-12 text-center text-3xl font-bold text-[#242428]">Login</h1>
+
+          <p className="mb-6 text-center text-sm leading-6 text-white/85">
+            Gunakan email dan password yang terdaftar. Admin akan diarahkan ke dashboard, awardee ke beranda survei.
+          </p>
+
+          {loading ? (
+            <LoadingSpinner />
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="text-sm font-medium text-[#242428]" htmlFor="login-email">
                   Email
                 </label>
                 <input
@@ -106,13 +102,13 @@ function Login() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   required
-                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                  className="mt-2 w-full rounded-xl border border-white/20 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
                   placeholder="awardee@email.com"
                 />
-                </div>
+              </div>
 
-                <div>
-                <label className="text-sm font-medium text-slate-700" htmlFor="login-password">
+              <div>
+                <label className="text-sm font-medium text-[#242428]" htmlFor="login-password">
                   Password
                 </label>
                 <input
@@ -121,38 +117,37 @@ function Login() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   required
-                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                  className="mt-2 w-full rounded-xl border border-white/20 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
                   placeholder="••••••••"
                 />
+              </div>
+
+              {error ? (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {error}
                 </div>
+              ) : null}
 
-                {error ? (
-                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {error}
-                  </div>
-                ) : null}
+              <button
+                type="submit"
+                disabled={loading}
+                className="mt-4 w-full rounded-xl bg-[#242428] py-3 text-lg font-semibold text-white transition-all duration-300 hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? 'Memproses...' : 'Login'}
+              </button>
+            </form>
+          )}
 
-                <p className="text-sm leading-6 text-slate-500">
-                  Setelah login, sistem akan membaca role dari profil dan mengarahkan Anda secara otomatis.
-                </p>
+          <p className="mt-10 text-center text-white">
+            Belum punya akun?{' '}
+            <Link to="/register" className="font-bold underline underline-offset-4">
+              Sign Up
+            </Link>
+          </p>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="inline-flex w-full items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.28)] transition hover:-translate-y-0.5 hover:bg-[#ff8a3d] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-                >
-                  {loading ? 'Memproses...' : 'Login'}
-                </button>
-              </form>
-            )}
-
-            <p className="mt-6 text-sm text-slate-600">
-              Belum punya akun?{' '}
-              <Link to="/register" className="font-semibold text-[#003366] hover:text-[#F97316]">
-                Daftar di sini
-              </Link>
-            </p>
-          </section>
+          <p className="mt-4 text-center text-xs leading-6 text-white/75">
+            Setelah login, sistem akan membaca role dari profil dan mengarahkan Anda secara otomatis.
+          </p>
         </div>
       </div>
     </main>
