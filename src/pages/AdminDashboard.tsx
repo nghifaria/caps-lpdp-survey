@@ -500,9 +500,9 @@ function AdminDashboard() {
   }
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,_#f8fbff_0%,_#eef4fb_100%)] px-4 py-10 text-slate-900 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[linear-gradient(180deg,_#f8fbff_0%,_#eef4fb_100%)] px-4 py-10 text-slate-900 print:bg-white print:px-0 print:py-0 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(0,51,102,0.08)] sm:p-8">
+        <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(0,51,102,0.08)] print:rounded-none print:border-0 print:bg-white print:p-0 print:shadow-none sm:p-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
@@ -560,14 +560,14 @@ function AdminDashboard() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 print:hidden"
               >
                 Logout
               </button>
             </div>
           </div>
 
-          <div className="mt-6 inline-flex rounded-full border border-slate-200 bg-slate-50 p-1">
+          <div className="mt-6 inline-flex rounded-full border border-slate-200 bg-slate-50 p-1 print:hidden">
             {[
               { key: 'analytics', label: 'Analytics' },
               { key: 'critical-feedback', label: 'Critical Feedback' },
@@ -595,65 +595,97 @@ function AdminDashboard() {
           ) : (
             <>
               {activeTab === 'analytics' ? (
-              <section className="mt-8 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-                <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                    <div>
-                      <h2 className="text-lg font-semibold text-slate-900">IPA Scatter Plot</h2>
-                      <p className="mt-1 text-sm text-slate-600">
-                        Kiri bawah ke kanan atas menggambarkan distribusi kuadran.
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                      <label className="block text-sm font-medium text-slate-700" htmlFor="province-filter">
-                        Asal Provinsi
-                        <select
-                          id="province-filter"
-                          value={selectedProvince}
-                          onChange={(event) => setSelectedProvince(event.target.value)}
-                          className="mt-2 w-full min-w-[220px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                <section className="mt-8 space-y-6 print:mt-4 print:block">
+                  <div className="grid gap-4 md:grid-cols-3 print:grid print:grid-cols-3 print:gap-3">
+                    {executiveKpis.map((kpi) => (
+                      <article
+                        key={kpi.label}
+                        className={`rounded-2xl border bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.04)] print:shadow-none ${
+                          kpi.tone === 'warning'
+                            ? 'border-red-200'
+                            : kpi.tone === 'accent'
+                              ? 'border-[#003366]/20'
+                              : 'border-slate-200'
+                        }`}
+                      >
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          {kpi.label}
+                        </p>
+                        <p
+                          className={`mt-3 text-2xl font-semibold tracking-[-0.04em] ${
+                            kpi.tone === 'warning'
+                              ? 'text-red-700'
+                              : kpi.tone === 'accent'
+                                ? 'text-[#003366]'
+                                : 'text-slate-900'
+                          }`}
                         >
-                          <option value="all">Semua Provinsi</option>
-                          {provinceOptions.map((province) => (
-                            <option key={province} value={province}>
-                              {province}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <div className="flex flex-wrap gap-2 text-xs font-medium text-slate-600">
-                        <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
-                          Q1 Prioritas Utama
-                        </span>
-                        <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
-                          Q2 Pertahankan Prestasi
-                        </span>
-                        <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
-                          Q3 Prioritas Rendah
-                        </span>
-                        <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
-                          Q4 Berlebihan
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 h-[420px] w-full rounded-[1.5rem] bg-white p-3">
-                    <ScatterPlot data={ipaPoints} meanPerformance={means.performance} meanImportance={means.importance} />
-                  </div>
-                </div>
-
-                <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6">
-                  <h2 className="text-lg font-semibold text-slate-900">Ringkasan Kuadran</h2>
-                  <div className="mt-4 space-y-3 text-sm text-slate-700">
-                    {['Q1: Prioritas Utama', 'Q2: Pertahankan Prestasi', 'Q3: Prioritas Rendah', 'Q4: Berlebihan'].map((label) => (
-                      <div key={label} className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                        {label}
-                      </div>
+                          {kpi.value}
+                        </p>
+                      </article>
                     ))}
                   </div>
-                </div>
-              </section>
+
+                  <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr] print:block print:gap-0">
+                    <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between print:block">
+                        <div>
+                          <h2 className="text-lg font-semibold text-slate-900">IPA Scatter Plot</h2>
+                          <p className="mt-1 text-sm text-slate-600">
+                            Kiri bawah ke kanan atas menggambarkan distribusi kuadran.
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end print:hidden">
+                          <label className="block text-sm font-medium text-slate-700" htmlFor="province-filter">
+                            Asal Provinsi
+                            <select
+                              id="province-filter"
+                              value={selectedProvince}
+                              onChange={(event) => setSelectedProvince(event.target.value)}
+                              className="mt-2 w-full min-w-[220px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                            >
+                              <option value="all">Semua Provinsi</option>
+                              {provinceOptions.map((province) => (
+                                <option key={province} value={province}>
+                                  {province}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <div className="flex flex-wrap gap-2 text-xs font-medium text-slate-600">
+                            <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
+                              Q1 Prioritas Utama
+                            </span>
+                            <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
+                              Q2 Pertahankan Prestasi
+                            </span>
+                            <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
+                              Q3 Prioritas Rendah
+                            </span>
+                            <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
+                              Q4 Berlebihan
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 h-[420px] w-full rounded-[1.5rem] bg-white p-3 print:mt-4 print:h-auto print:rounded-none print:bg-white print:p-0 print:break-inside-avoid">
+                        <ScatterPlot data={ipaPoints} meanPerformance={means.performance} meanImportance={means.importance} />
+                      </div>
+                    </div>
+
+                    <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6 print:mt-4 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid">
+                      <h2 className="text-lg font-semibold text-slate-900">Ringkasan Kuadran</h2>
+                      <div className="mt-4 space-y-3 text-sm text-slate-700">
+                        {['Q1: Prioritas Utama', 'Q2: Pertahankan Prestasi', 'Q3: Prioritas Rendah', 'Q4: Berlebihan'].map((label) => (
+                          <div key={label} className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                            {label}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </section>
               ) : null}
 
               {activeTab === 'critical-feedback' ? (
@@ -716,7 +748,7 @@ function AdminDashboard() {
               ) : null}
 
               {activeTab === 'users' ? (
-                <section className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6">
+                <section className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6 print:hidden">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h2 className="text-lg font-semibold text-slate-900">User Management</h2>
@@ -786,7 +818,7 @@ function AdminDashboard() {
 
               {activeTab === 'analytics' ? (
                 <>
-                  <section className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6">
+                  <section className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6 print:hidden">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <h2 className="text-lg font-semibold text-slate-900">Raw Data</h2>
@@ -794,13 +826,22 @@ function AdminDashboard() {
                           Jawaban mentah untuk analisis lanjutan atau ekspor CSV.
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={exportCsv}
-                        className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#ff8a3d]"
-                      >
-                        Export CSV
-                      </button>
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={exportCsv}
+                          className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#ff8a3d]"
+                        >
+                          Export CSV
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handlePrintReport}
+                          className="inline-flex items-center justify-center rounded-full bg-[#003366] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0a447f]"
+                        >
+                          Cetak Laporan PDF
+                        </button>
+                      </div>
                     </div>
 
                     <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
