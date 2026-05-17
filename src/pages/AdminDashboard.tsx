@@ -15,6 +15,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { Pencil, Trash2 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -855,18 +856,24 @@ function AdminDashboard() {
     day: 'numeric',
   })
 
-  return (
-    <div className="min-h-screen bg-[#F7F5EF] print:bg-white">
-      <aside className="fixed left-0 top-0 z-50 flex h-screen w-[230px] flex-col justify-between bg-[#242428] px-5 py-6 text-white print:hidden">
-        <div className="pt-28">
-          <div className="absolute left-0 top-0 flex h-24 w-full items-center gap-6 bg-light-grey px-5">
-            <img src="/logo_lpdp.png" alt="LPDP Logo" className="h-10 w-auto object-contain" />
-            <div className="leading-tight">
-              <h1 className="text-sm font-semibold tracking-tight text-oren-muda">Survey</h1>
-              <h1 className="text-sm font-semibold tracking-tight text-oren-muda">Awardee LPDP</h1>
-            </div>
-          </div>
+  const formatSurveyDate = (dateValue: string) =>
+    new Date(dateValue).toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
 
+  const activeTabTitleMap: Record<typeof activeTab, string> = {
+    analytics: 'Analitik Survei',
+    'critical-feedback': 'Kelola Keluhan Kritis',
+    users: 'Manajemen Pengguna',
+    'manage-surveys': 'Kelola Kuesioner',
+  }
+
+  return (
+    <div className="min-h-screen bg-[#fffcf4] print:bg-white">
+      <aside className="fixed left-0 top-0 z-50 flex h-screen w-[230px] flex-col justify-between bg-[#2b2b2b] px-5 py-6 text-white print:hidden">
+        <div className="pt-8">
           <nav className="flex flex-col gap-3">
             {sidebarMenuItems.map((item) => (
               <button
@@ -875,8 +882,8 @@ function AdminDashboard() {
                 onClick={() => setActiveTab(item.key as typeof activeTab)}
                 className={`rounded-xl px-5 py-3 text-left text-sm font-medium transition-all duration-300 ${
                   activeTab === item.key
-                    ? 'bg-oren-muda text-white'
-                    : 'text-white hover:bg-[#DE7A49]/20'
+                    ? 'bg-[#de7a49] text-white'
+                    : 'text-white/90 hover:bg-white/10'
                 }`}
               >
                 {item.label}
@@ -900,7 +907,7 @@ function AdminDashboard() {
           <button
             type="button"
             onClick={handleLogout}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-oren-muda px-5 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-[#C9683B]"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#de7a49] px-5 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-[#C9683B]"
           >
             Logout
           </button>
@@ -909,8 +916,20 @@ function AdminDashboard() {
 
       <div className="ml-[230px] flex min-h-screen flex-1 flex-col print:ml-0">
         <header className="sticky top-0 z-40 bg-light-grey shadow-sm print:hidden">
-          <div className="flex h-24 items-center justify-end px-6 md:px-10">
-            <h1 className="text-md font-medium tracking-tight text-ash md:text-md">{formattedDate}</h1>
+          <div className="flex min-h-24 items-center justify-between gap-6 px-6 py-4 md:px-10">
+            <div className="flex min-w-0 items-center gap-4">
+              <img src="/logo_lpdp.png" alt="LPDP Logo" className="h-10 w-auto shrink-0 object-contain" />
+              <div className="min-w-0 leading-tight">
+                <h1 className="truncate text-base font-semibold tracking-tight text-[#2b2b2b] md:text-lg">
+                  {activeTabTitleMap[activeTab]}
+                </h1>
+                <p className="truncate text-sm font-medium tracking-tight text-oren-muda">
+                  Survey Awardee LPDP
+                </p>
+              </div>
+            </div>
+
+            <h1 className="shrink-0 text-md font-medium tracking-tight text-ash md:text-md">{formattedDate}</h1>
           </div>
         </header>
 
@@ -1352,38 +1371,66 @@ function AdminDashboard() {
               ) : null}
 
               {activeTab === 'manage-surveys' ? (
-                <section className="mt-8 rounded-[2rem] border border-gray-100 bg-slate-50 p-5 sm:p-6 print:hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <section className="mt-8 rounded-[2rem] border border-[#ab924f] bg-[#fffcf4] p-5 sm:p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] print:hidden">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                      <h2 className="text-lg font-semibold tracking-tight text-slate-900">Kelola Survei</h2>
-                      <p className="mt-1 text-sm text-slate-600">
-                        Buat survei baru atau hapus survei lama langsung dari dashboard.
+                      <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#bd5b2c]">
+                        Survey List
+                      </p>
+                      <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#2b2b2b]">
+                        Your Surveys
+                      </h2>
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-[#7a5d3a]">
+                        Kelola survei aktif, arsip, dan draft dari satu tampilan kartu yang responsif.
                       </p>
                     </div>
+
+                    <form
+                      onSubmit={(event) => void handleCreateSurvey(event)}
+                      className="flex w-full flex-col gap-3 sm:max-w-xl lg:max-w-2xl"
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                        <label className="block flex-1 text-sm font-medium text-[#2b2b2b]">
+                          Judul Survei Baru
+                          <input
+                            type="text"
+                            value={newSurveyTitle}
+                            onChange={(event) => setNewSurveyTitle(event.target.value)}
+                            placeholder="Contoh: Survei Kepuasan Layanan LPDP 2027"
+                            className="mt-2 w-full rounded-2xl border border-[#ab924f] bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-[#de7a49]/30 focus:ring-offset-1"
+                          />
+                        </label>
+                        <button
+                          type="submit"
+                          disabled={creatingSurvey}
+                          className="inline-flex items-center justify-center rounded-full bg-[#de7a49] px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {creatingSurvey ? 'Membuat...' : '+ New Survey'}
+                        </button>
+                      </div>
+                    </form>
                   </div>
 
-                  <form
-                    onSubmit={(event) => void handleCreateSurvey(event)}
-                    className="mt-5 grid gap-3 rounded-[1.5rem] border border-gray-100 bg-white p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] sm:grid-cols-[1fr_auto] sm:items-end"
-                  >
-                    <label className="block text-sm font-medium text-slate-700">
-                      Judul Survei Baru
-                      <input
-                        type="text"
-                        value={newSurveyTitle}
-                        onChange={(event) => setNewSurveyTitle(event.target.value)}
-                        placeholder="Contoh: Survei Kepuasan Layanan LPDP 2027"
-                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                      />
-                    </label>
+                  <div className="mt-5 flex flex-wrap items-center gap-3">
                     <button
-                      type="submit"
-                      disabled={creatingSurvey}
-                      className="inline-flex items-center justify-center rounded-full bg-[#003366] px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                      type="button"
+                      className="rounded-full bg-[#de7a49] px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
                     >
-                      {creatingSurvey ? 'Membuat...' : 'Buat Survei'}
+                      Active
                     </button>
-                  </form>
+                    <button
+                      type="button"
+                      className="rounded-full border border-[#ab924f] bg-white px-5 py-2.5 text-sm font-semibold text-[#bd5b2c] transition hover:bg-[#fff8ec]"
+                    >
+                      Archived
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-full border border-[#ab924f] bg-white px-5 py-2.5 text-sm font-semibold text-[#bd5b2c] transition hover:bg-[#fff8ec]"
+                    >
+                      Draft
+                    </button>
+                  </div>
 
                   {surveysLoading ? (
                     <div className="mt-5">
@@ -1392,61 +1439,52 @@ function AdminDashboard() {
                   ) : surveysError ? (
                     <p className="mt-5 text-sm text-red-600">{surveysError}</p>
                   ) : (
-                    <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-gray-100 bg-white shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-                          <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500">
-                            <tr>
-                              <th className="px-4 py-3">Judul</th>
-                              <th className="px-4 py-3">Status</th>
-                              <th className="px-4 py-3">Dibuat</th>
-                              <th className="px-4 py-3">Aksi</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-200">
-                            {surveys.map((item) => (
-                              <tr key={item.id}>
-                                <td className="px-4 py-3 font-medium text-slate-900">{item.title}</td>
-                                <td className="px-4 py-3 text-slate-600">
-                                  <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${item.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-                                    {item.is_active ? 'Aktif' : 'Nonaktif'}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-3 text-slate-600">
-                                  {new Date(item.created_at).toLocaleDateString('id-ID', {
-                                    day: '2-digit',
-                                    month: 'short',
-                                    year: 'numeric',
-                                  })}
-                                </td>
-                                <td className="px-4 py-3 text-slate-600">
-                                  <div className="flex flex-wrap gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() => void handleSelectSurveyQuestions(item.id)}
-                                      className={`inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition-all duration-300 hover:brightness-110 active:scale-95 ${
-                                        selectedSurveyId === item.id
-                                          ? 'bg-[#003366] text-white'
-                                          : 'bg-transparent text-slate-700 hover:bg-gray-100 hover:text-slate-900'
-                                      }`}
-                                    >
-                                      Kelola Pertanyaan
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => void handleDeleteSurvey(item.id)}
-                                      disabled={deletingSurveyId === item.id}
-                                      className="inline-flex items-center justify-center rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                      {deletingSurveyId === item.id ? 'Menghapus...' : 'Hapus Survei'}
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                    <div className="mt-6 space-y-4">
+                      {surveys.map((item) => (
+                        <article
+                          key={item.id}
+                          className="rounded-xl border border-[#ab924f] bg-white p-4 shadow-[0_4px_18px_-6px_rgba(0,0,0,0.08)] transition-transform duration-300 hover:-translate-y-0.5"
+                        >
+                          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="min-w-0">
+                              <h3 className="text-xl font-semibold tracking-tight text-[#2b2b2b]">
+                                {item.title}
+                              </h3>
+                              <p className="mt-2 text-sm font-medium text-[#bd5b2c]">
+                                Periode pengisian 1 Januari - 30 Juni 2026
+                              </p>
+                              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-[#7a5d3a]">
+                                <span>30 Questions</span>
+                                <span className="h-4 w-px bg-[#ab924f]" aria-hidden="true" />
+                                <span>Last Modified {formatSurveyDate(item.created_at)}</span>
+                                <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${item.is_active ? 'bg-[#de7a49] text-white' : 'border border-[#ab924f] bg-white text-[#bd5b2c]'}`}>
+                                  {item.is_active ? 'Active' : 'Draft'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex shrink-0 flex-wrap gap-3 lg:justify-end">
+                              <button
+                                type="button"
+                                onClick={() => void handleSelectSurveyQuestions(item.id)}
+                                className="inline-flex items-center gap-2 rounded-xl bg-[#56c4ff] px-4 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95"
+                              >
+                                <Pencil size={16} />
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleDeleteSurvey(item.id)}
+                                disabled={deletingSurveyId === item.id}
+                                className="inline-flex items-center gap-2 rounded-xl bg-[#ff5656] px-4 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                <Trash2 size={16} />
+                                {deletingSurveyId === item.id ? 'Deleting...' : 'Delete'}
+                              </button>
+                            </div>
+                          </div>
+                        </article>
+                      ))}
                     </div>
                   )}
 
