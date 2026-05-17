@@ -841,102 +841,145 @@ function AdminDashboard() {
     ? surveys.find((item) => item.id === selectedSurveyId) ?? null
     : null
 
+  const sidebarMenuItems = [
+    { key: 'analytics', label: 'Analytics' },
+    { key: 'critical-feedback', label: 'Critical Feedback' },
+    { key: 'users', label: 'User Management' },
+    { key: 'manage-surveys', label: 'Kelola Survei' },
+  ]
+
+  const formattedDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,_#f8fbff_0%,_#eef4fb_100%)] px-4 py-10 text-slate-900 print:bg-white print:px-0 print:py-0 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] print:rounded-none print:border-0 print:bg-white print:p-0 print:shadow-none sm:p-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
-                Admin Command Center
-              </p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight tracking-[-0.04em] text-[#003366] sm:text-4xl">
-                IPA Analytics Dashboard
-              </h1>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-                Visualisasi ini merangkum matriks Importance-Performance Analysis dari jawaban
-                dual_likert untuk membantu tim melihat prioritas perbaikan layanan.
-              </p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-gray-100 bg-slate-50 px-4 py-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
-                <p className="text-sm font-medium text-gray-500">Survey</p>
-                <p className="mt-1 text-4xl font-extrabold tracking-tight text-slate-900">{survey?.title ?? '-'}</p>
-              </div>
-              <div className="rounded-2xl border border-gray-100 bg-slate-50 px-4 py-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
-                <p className="text-sm font-medium text-gray-500">Mean X</p>
-                <p className="mt-1 text-4xl font-extrabold tracking-tight text-slate-900">
-                  {means.performance.toFixed(2)}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-gray-100 bg-slate-50 px-4 py-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
-                <p className="text-sm font-medium text-gray-500">Mean Y</p>
-                <p className="mt-1 text-4xl font-extrabold tracking-tight text-slate-900">
-                  {means.importance.toFixed(2)}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
-              <Link
-                to="/"
-                className="inline-flex items-center justify-center rounded-full bg-transparent px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-100 hover:text-slate-900"
-              >
-                Kembali ke Landing Page
-              </Link>
-              {survey ? (
-                <button
-                  type="button"
-                  onClick={toggleSurveyStatus}
-                  disabled={updatingStatus}
-                  className="inline-flex items-center justify-center rounded-full bg-[#003366] px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {updatingStatus
-                    ? 'Memperbarui...'
-                    : survey.is_active
-                      ? 'Tutup Survei'
-                      : 'Buka Survei'}
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="inline-flex items-center justify-center rounded-full bg-transparent px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-100 hover:text-slate-900 print:hidden"
-              >
-                Logout
-              </button>
+    <div className="min-h-screen bg-[#F7F5EF] print:bg-white">
+      <aside className="fixed left-0 top-0 z-50 flex h-screen w-[230px] flex-col justify-between bg-[#242428] px-5 py-6 text-white print:hidden">
+        <div className="pt-28">
+          <div className="absolute left-0 top-0 flex h-24 w-full items-center gap-6 bg-light-grey px-5">
+            <img src="/logo_lpdp.png" alt="LPDP Logo" className="h-10 w-auto object-contain" />
+            <div className="leading-tight">
+              <h1 className="text-sm font-semibold tracking-tight text-oren-muda">Survey</h1>
+              <h1 className="text-sm font-semibold tracking-tight text-oren-muda">Awardee LPDP</h1>
             </div>
           </div>
 
-          <div className="mt-6 inline-flex rounded-full border border-slate-200 bg-slate-50 p-1 print:hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
-            {[
-              { key: 'analytics', label: 'Analytics' },
-              { key: 'critical-feedback', label: 'Critical Feedback' },
-              { key: 'users', label: 'User Management' },
-              { key: 'manage-surveys', label: 'Kelola Survei' },
-            ].map((tab) => (
+          <nav className="flex flex-col gap-3">
+            {sidebarMenuItems.map((item) => (
               <button
-                key={tab.key}
+                key={item.key}
                 type="button"
-                onClick={() => setActiveTab(tab.key as typeof activeTab)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  activeTab === tab.key
-                    ? 'bg-[#003366] text-white shadow-[0_10px_24px_rgba(0,51,102,0.18)]'
-                    : 'text-slate-600 hover:text-slate-900'
+                onClick={() => setActiveTab(item.key as typeof activeTab)}
+                className={`rounded-xl px-5 py-3 text-left text-sm font-medium transition-all duration-300 ${
+                  activeTab === item.key
+                    ? 'bg-oren-muda text-white'
+                    : 'text-white hover:bg-[#DE7A49]/20'
                 }`}
               >
-                {tab.label}
+                {item.label}
               </button>
             ))}
+          </nav>
+        </div>
+
+        <div>
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white">AD</span>
+            </div>
+
+            <div>
+              <h2 className="text-sm font-semibold tracking-tight">Admin LPDP</h2>
+              <p className="text-xs text-gray-300">adminlpdp@gmail.com</p>
+            </div>
           </div>
 
-          {loading ? (
-            <LoadingSpinner />
-          ) : error ? (
-            <p className="mt-8 text-sm text-red-600">{error}</p>
-          ) : (
-            <>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-oren-muda px-5 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-[#C9683B]"
+          >
+            Logout
+          </button>
+        </div>
+      </aside>
+
+      <div className="ml-[230px] flex min-h-screen flex-1 flex-col print:ml-0">
+        <header className="sticky top-0 z-40 bg-light-grey shadow-sm print:hidden">
+          <div className="flex h-24 items-center justify-end px-6 md:px-10">
+            <h1 className="text-md font-medium tracking-tight text-ash md:text-md">{formattedDate}</h1>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto px-4 py-10 text-slate-900 print:bg-white print:px-0 print:py-0 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] print:rounded-none print:border-0 print:bg-white print:p-0 print:shadow-none sm:p-8">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
+                    Admin Command Center
+                  </p>
+                  <h1 className="mt-3 text-3xl font-semibold tracking-tight tracking-[-0.04em] text-[#003366] sm:text-4xl">
+                    IPA Analytics Dashboard
+                  </h1>
+                  <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
+                    Visualisasi ini merangkum matriks Importance-Performance Analysis dari jawaban
+                    dual_likert untuk membantu tim melihat prioritas perbaikan layanan.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-gray-100 bg-slate-50 px-4 py-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+                    <p className="text-sm font-medium text-gray-500">Survey</p>
+                    <p className="mt-1 text-4xl font-extrabold tracking-tight text-slate-900">{survey?.title ?? '-'}</p>
+                  </div>
+                  <div className="rounded-2xl border border-gray-100 bg-slate-50 px-4 py-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+                    <p className="text-sm font-medium text-gray-500">Mean X</p>
+                    <p className="mt-1 text-4xl font-extrabold tracking-tight text-slate-900">
+                      {means.performance.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-gray-100 bg-slate-50 px-4 py-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+                    <p className="text-sm font-medium text-gray-500">Mean Y</p>
+                    <p className="mt-1 text-4xl font-extrabold tracking-tight text-slate-900">
+                      {means.importance.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
+                  <Link
+                    to="/"
+                    className="inline-flex items-center justify-center rounded-full bg-transparent px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-100 hover:text-slate-900"
+                  >
+                    Kembali ke Landing Page
+                  </Link>
+                  {survey ? (
+                    <button
+                      type="button"
+                      onClick={toggleSurveyStatus}
+                      disabled={updatingStatus}
+                      className="inline-flex items-center justify-center rounded-full bg-[#003366] px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {updatingStatus
+                        ? 'Memperbarui...'
+                        : survey.is_active
+                          ? 'Tutup Survei'
+                          : 'Buka Survei'}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+
+              {loading ? (
+                <LoadingSpinner />
+              ) : error ? (
+                <p className="mt-8 text-sm text-red-600">{error}</p>
+              ) : (
+                <>
               {activeTab === 'analytics' ? (
                 <section className="mt-8 space-y-6 print:mt-4 print:block">
                   <div className="grid gap-4 md:grid-cols-3 print:grid print:grid-cols-3 print:gap-3">
@@ -1110,7 +1153,7 @@ function AdminDashboard() {
               {activeTab === 'analytics' ? (
                 <section className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid">
                   <div className="flex flex-col gap-2">
-                    <h2 className="text-lg font-semibold text-slate-900">
+                    <h2 className="text-lg font-semibold tracking-tight text-slate-900">
                       IPA Quadrant Actionable Insights
                     </h2>
                     <p className="text-sm text-slate-600">
@@ -1608,6 +1651,8 @@ function AdminDashboard() {
         </section>
       </div>
     </main>
+    </div>
+  </div>
   )
 }
 
