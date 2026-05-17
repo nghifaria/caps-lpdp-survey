@@ -149,7 +149,7 @@ function Profile() {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,_#eef4fb_0%,_#ffffff_100%)] px-4 py-10 text-slate-900 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(0,51,102,0.08)] sm:p-8">
+      <div className="mx-auto max-w-4xl rounded-[2rem] border border-gray-100 bg-white p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] sm:p-8">
         <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
           Profile Management
         </p>
@@ -157,7 +157,7 @@ function Profile() {
           <span aria-hidden="true">←</span>
           Back to Home
         </Link>
-        <h1 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-[#003366] sm:text-4xl">
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight tracking-[-0.04em] text-[#003366] sm:text-4xl">
           Profil Awardee
         </h1>
 
@@ -168,7 +168,7 @@ function Profile() {
         ) : (
           <form className="mt-8 grid gap-8 lg:grid-cols-[0.8fr_1.2fr]" onSubmit={handleSubmit}>
             <div className="space-y-4">
-              <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-5 text-center">
+              <div className="rounded-[2rem] border border-gray-100 bg-slate-50 p-5 text-center shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
                 <div className="mx-auto flex h-40 w-40 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#003366]/5 shadow-[0_16px_40px_rgba(0,51,102,0.12)]">
                   {previewUrl ? (
                     <img src={previewUrl} alt="Preview avatar" className="h-full w-full object-cover" />
@@ -186,7 +186,7 @@ function Profile() {
                   type="file"
                   accept="image/*"
                   onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                 />
               </div>
             </div>
@@ -201,7 +201,7 @@ function Profile() {
                   type="text"
                   value={fullName}
                   onChange={(event) => setFullName(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                 />
               </div>
 
@@ -216,7 +216,7 @@ function Profile() {
                     value={nik}
                     onChange={(event) => setNik(event.target.value)}
                     placeholder="Contoh: 3174xxxxxxxxxxxx"
-                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                   />
                 </div>
 
@@ -229,7 +229,7 @@ function Profile() {
                     type="date"
                     value={dateOfBirth}
                     onChange={(event) => setDateOfBirth(event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                   />
                 </div>
 
@@ -241,7 +241,7 @@ function Profile() {
                     id="province"
                     value={province}
                     onChange={(event) => setProvince(event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                   >
                     <option value="">Pilih provinsi</option>
                     {provinceOptions.map((item) => (
@@ -262,7 +262,7 @@ function Profile() {
                     value={university}
                     onChange={(event) => setUniversity(event.target.value)}
                     placeholder="Contoh: Universitas Indonesia"
-                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                   />
                 </div>
               </div>
@@ -282,7 +282,7 @@ function Profile() {
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.28)] transition hover:-translate-y-0.5 hover:bg-[#ff8a3d] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.28)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
               >
                 {saving ? 'Menyimpan...' : 'Simpan Profil'}
               </button>

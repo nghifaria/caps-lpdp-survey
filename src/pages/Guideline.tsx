@@ -23,7 +23,7 @@ function Guideline() {
       <Navbar />
 
       <div className="mx-auto max-w-6xl px-5 py-16 text-center">
-        <h1 className="mb-5 text-4xl font-bold uppercase text-[#003366] md:text-6xl">
+        <h1 className="mb-5 text-4xl font-bold tracking-tight uppercase text-[#003366] md:text-6xl">
           GUIDELINE
         </h1>
 

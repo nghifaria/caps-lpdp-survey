@@ -844,13 +844,13 @@ function AdminDashboard() {
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,_#f8fbff_0%,_#eef4fb_100%)] px-4 py-10 text-slate-900 print:bg-white print:px-0 print:py-0 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(0,51,102,0.08)] print:rounded-none print:border-0 print:bg-white print:p-0 print:shadow-none sm:p-8">
+        <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] print:rounded-none print:border-0 print:bg-white print:p-0 print:shadow-none sm:p-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
                 Admin Command Center
               </p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[#003366] sm:text-4xl">
+              <h1 className="mt-3 text-3xl font-semibold tracking-tight tracking-[-0.04em] text-[#003366] sm:text-4xl">
                 IPA Analytics Dashboard
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
@@ -860,19 +860,19 @@ function AdminDashboard() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Survey</p>
-                <p className="mt-1 text-sm font-semibold text-slate-900">{survey?.title ?? '-'}</p>
+              <div className="rounded-2xl border border-gray-100 bg-slate-50 px-4 py-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+                <p className="text-sm font-medium text-gray-500">Survey</p>
+                <p className="mt-1 text-4xl font-extrabold tracking-tight text-slate-900">{survey?.title ?? '-'}</p>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Mean X</p>
-                <p className="mt-1 text-sm font-semibold text-slate-900">
+              <div className="rounded-2xl border border-gray-100 bg-slate-50 px-4 py-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+                <p className="text-sm font-medium text-gray-500">Mean X</p>
+                <p className="mt-1 text-4xl font-extrabold tracking-tight text-slate-900">
                   {means.performance.toFixed(2)}
                 </p>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Mean Y</p>
-                <p className="mt-1 text-sm font-semibold text-slate-900">
+              <div className="rounded-2xl border border-gray-100 bg-slate-50 px-4 py-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+                <p className="text-sm font-medium text-gray-500">Mean Y</p>
+                <p className="mt-1 text-4xl font-extrabold tracking-tight text-slate-900">
                   {means.importance.toFixed(2)}
                 </p>
               </div>
@@ -881,7 +881,7 @@ function AdminDashboard() {
             <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
               <Link
                 to="/"
-                className="inline-flex items-center justify-center rounded-full border border-[#003366] bg-white px-5 py-3 text-sm font-semibold text-[#003366] transition hover:bg-slate-50"
+                className="inline-flex items-center justify-center rounded-full bg-transparent px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-100 hover:text-slate-900"
               >
                 Kembali ke Landing Page
               </Link>
@@ -890,7 +890,7 @@ function AdminDashboard() {
                   type="button"
                   onClick={toggleSurveyStatus}
                   disabled={updatingStatus}
-                  className="inline-flex items-center justify-center rounded-full border border-[#003366] bg-[#003366] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0a447f] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center justify-center rounded-full bg-[#003366] px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {updatingStatus
                     ? 'Memperbarui...'
@@ -902,14 +902,14 @@ function AdminDashboard() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 print:hidden"
+                className="inline-flex items-center justify-center rounded-full bg-transparent px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-100 hover:text-slate-900 print:hidden"
               >
                 Logout
               </button>
             </div>
           </div>
 
-          <div className="mt-6 inline-flex rounded-full border border-slate-200 bg-slate-50 p-1 print:hidden">
+          <div className="mt-6 inline-flex rounded-full border border-slate-200 bg-slate-50 p-1 print:hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
             {[
               { key: 'analytics', label: 'Analytics' },
               { key: 'critical-feedback', label: 'Critical Feedback' },
@@ -973,7 +973,7 @@ function AdminDashboard() {
                     <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid">
                       <div className="flex items-center justify-between gap-4">
                         <div>
-                          <h2 className="text-lg font-semibold text-slate-900">Tren Partisipasi</h2>
+                          <h2 className="text-lg font-semibold tracking-tight text-slate-900">Tren Partisipasi</h2>
                           <p className="mt-1 text-sm text-slate-600">
                             Total respons per tanggal berdasarkan data yang sudah difilter.
                           </p>
@@ -1006,10 +1006,10 @@ function AdminDashboard() {
                       </div>
                     </div>
 
-                    <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid">
+                    <div className="rounded-[2rem] border border-gray-100 bg-slate-50 p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
                       <div className="flex items-center justify-between gap-4">
                         <div>
-                          <h2 className="text-lg font-semibold text-slate-900">Sebaran Provinsi</h2>
+                          <h2 className="text-lg font-semibold tracking-tight text-slate-900">Sebaran Provinsi</h2>
                           <p className="mt-1 text-sm text-slate-600">
                             Distribusi asal provinsi dari respons pada filter aktif.
                           </p>
@@ -1046,10 +1046,10 @@ function AdminDashboard() {
                   </div>
 
                   <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr] print:block print:gap-0">
-                    <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid">
+                    <div className="rounded-[2rem] border border-gray-100 bg-slate-50 p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
                       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between print:block">
                         <div>
-                          <h2 className="text-lg font-semibold text-slate-900">IPA Scatter Plot</h2>
+                          <h2 className="text-lg font-semibold tracking-tight text-slate-900">IPA Scatter Plot</h2>
                           <p className="mt-1 text-sm text-slate-600">
                             Kiri bawah ke kanan atas menggambarkan distribusi kuadran.
                           </p>
@@ -1061,7 +1061,7 @@ function AdminDashboard() {
                               id="province-filter"
                               value={selectedProvince}
                               onChange={(event) => setSelectedProvince(event.target.value)}
-                              className="mt-2 w-full min-w-[220px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                              className="mt-2 w-full min-w-[220px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                             >
                               <option value="all">Semua Provinsi</option>
                               {provinceOptions.map((province) => (
@@ -1093,8 +1093,8 @@ function AdminDashboard() {
                       </div>
                     </div>
 
-                    <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6 print:mt-4 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid">
-                      <h2 className="text-lg font-semibold text-slate-900">Ringkasan Kuadran</h2>
+                    <div className="rounded-[2rem] border border-gray-100 bg-slate-50 p-5 sm:p-6 print:mt-4 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+                      <h2 className="text-lg font-semibold tracking-tight text-slate-900">Ringkasan Kuadran</h2>
                       <div className="mt-4 space-y-3 text-sm text-slate-700">
                         {['Q1: Prioritas Utama', 'Q2: Pertahankan Prestasi', 'Q3: Prioritas Rendah', 'Q4: Berlebihan'].map((label) => (
                           <div key={label} className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
@@ -1141,14 +1141,14 @@ function AdminDashboard() {
                       return (
                         <article
                           key={quadrant.label}
-                          className={`rounded-[1.5rem] border p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)] print:shadow-none ${toneClasses}`}
+                          className={`rounded-[1.5rem] border p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] print:shadow-none ${toneClasses}`}
                         >
                           <div className="flex items-start justify-between gap-4">
                             <div>
                               <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${titleClasses}`}>
                                 {quadrant.label}
                               </p>
-                              <h3 className="mt-2 text-base font-semibold text-slate-900">
+                              <h3 className="mt-2 text-base font-semibold tracking-tight text-slate-900">
                                 {quadrant.title}
                               </h3>
                             </div>
@@ -1181,10 +1181,10 @@ function AdminDashboard() {
               ) : null}
 
               {activeTab === 'critical-feedback' ? (
-                <section className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6">
+                <section className="mt-8 rounded-[2rem] border border-gray-100 bg-slate-50 p-5 sm:p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h2 className="text-lg font-semibold text-slate-900">Critical Feedback</h2>
+                      <h2 className="text-lg font-semibold tracking-tight text-slate-900">Critical Feedback</h2>
                       <p className="mt-1 text-sm text-slate-600">
                         Keluhan dengan skor performance di bawah 3 dan alasan yang diisi, sudah mengikuti filter provinsi aktif.
                       </p>
@@ -1199,14 +1199,14 @@ function AdminDashboard() {
                       {criticalFeedback.map((feedback, index) => (
                         <article
                           key={`${feedback.response_id}-${feedback.question_text}-${index}`}
-                          className="rounded-[1.5rem] border border-amber-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]"
+                          className="rounded-[1.5rem] border border-amber-200 bg-white p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)]"
                         >
                           <div className="flex items-start justify-between gap-4">
                             <div>
                               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#F97316]">
                                 Question Text
                               </p>
-                              <h3 className="mt-2 text-base font-semibold text-slate-900">
+                              <h3 className="mt-2 text-base font-semibold tracking-tight text-slate-900">
                                 {feedback.question_text}
                               </h3>
                             </div>
@@ -1227,7 +1227,7 @@ function AdminDashboard() {
                       ))}
                     </div>
                   ) : (
-                    <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-white p-8 text-center">
+                    <div className="mt-5 rounded-[1.5rem] border border-gray-100 bg-white p-8 text-center shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
                       <p className="text-base font-semibold text-slate-900">
                         Semua responden puas dengan layanan periode ini.
                       </p>
@@ -1240,10 +1240,10 @@ function AdminDashboard() {
               ) : null}
 
               {activeTab === 'users' ? (
-                <section className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6 print:hidden">
+                <section className="mt-8 rounded-[2rem] border border-gray-100 bg-slate-50 p-5 sm:p-6 print:hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h2 className="text-lg font-semibold text-slate-900">User Management</h2>
+                      <h2 className="text-lg font-semibold tracking-tight text-slate-900">User Management</h2>
                       <p className="mt-1 text-sm text-slate-600">
                         Kelola role user tanpa akses manual ke database.
                       </p>
@@ -1257,7 +1257,7 @@ function AdminDashboard() {
                   ) : usersError ? (
                     <p className="mt-5 text-sm text-red-600">{usersError}</p>
                   ) : (
-                    <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
+                    <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-gray-100 bg-white shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
                       <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
                           <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500">
@@ -1309,10 +1309,10 @@ function AdminDashboard() {
               ) : null}
 
               {activeTab === 'manage-surveys' ? (
-                <section className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6 print:hidden">
+                <section className="mt-8 rounded-[2rem] border border-gray-100 bg-slate-50 p-5 sm:p-6 print:hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h2 className="text-lg font-semibold text-slate-900">Kelola Survei</h2>
+                      <h2 className="text-lg font-semibold tracking-tight text-slate-900">Kelola Survei</h2>
                       <p className="mt-1 text-sm text-slate-600">
                         Buat survei baru atau hapus survei lama langsung dari dashboard.
                       </p>
@@ -1321,7 +1321,7 @@ function AdminDashboard() {
 
                   <form
                     onSubmit={(event) => void handleCreateSurvey(event)}
-                    className="mt-5 grid gap-3 rounded-[1.5rem] border border-slate-200 bg-white p-4 sm:grid-cols-[1fr_auto] sm:items-end"
+                    className="mt-5 grid gap-3 rounded-[1.5rem] border border-gray-100 bg-white p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] sm:grid-cols-[1fr_auto] sm:items-end"
                   >
                     <label className="block text-sm font-medium text-slate-700">
                       Judul Survei Baru
@@ -1330,13 +1330,13 @@ function AdminDashboard() {
                         value={newSurveyTitle}
                         onChange={(event) => setNewSurveyTitle(event.target.value)}
                         placeholder="Contoh: Survei Kepuasan Layanan LPDP 2027"
-                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                       />
                     </label>
                     <button
                       type="submit"
                       disabled={creatingSurvey}
-                      className="inline-flex items-center justify-center rounded-full bg-[#003366] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0a447f] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex items-center justify-center rounded-full bg-[#003366] px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {creatingSurvey ? 'Membuat...' : 'Buat Survei'}
                     </button>
@@ -1349,7 +1349,7 @@ function AdminDashboard() {
                   ) : surveysError ? (
                     <p className="mt-5 text-sm text-red-600">{surveysError}</p>
                   ) : (
-                    <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
+                    <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-gray-100 bg-white shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
                       <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
                           <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500">
@@ -1381,10 +1381,10 @@ function AdminDashboard() {
                                     <button
                                       type="button"
                                       onClick={() => void handleSelectSurveyQuestions(item.id)}
-                                      className={`inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition ${
+                                      className={`inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition-all duration-300 hover:brightness-110 active:scale-95 ${
                                         selectedSurveyId === item.id
                                           ? 'bg-[#003366] text-white'
-                                          : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                          : 'bg-transparent text-slate-700 hover:bg-gray-100 hover:text-slate-900'
                                       }`}
                                     >
                                       Kelola Pertanyaan
@@ -1393,7 +1393,7 @@ function AdminDashboard() {
                                       type="button"
                                       onClick={() => void handleDeleteSurvey(item.id)}
                                       disabled={deletingSurveyId === item.id}
-                                      className="inline-flex items-center justify-center rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                      className="inline-flex items-center justify-center rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                       {deletingSurveyId === item.id ? 'Menghapus...' : 'Hapus Survei'}
                                     </button>
@@ -1407,7 +1407,7 @@ function AdminDashboard() {
                     </div>
                   )}
 
-                  <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-white p-4 sm:p-5">
+                  <div className="mt-6 rounded-[1.5rem] border border-gray-100 bg-white p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] sm:p-5">
                     {selectedSurvey ? (
                       <>
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -1415,7 +1415,7 @@ function AdminDashboard() {
                             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#F97316]">
                               Detail Pertanyaan
                             </p>
-                            <h3 className="mt-2 text-lg font-semibold text-slate-900">
+                            <h3 className="mt-2 text-lg font-semibold tracking-tight text-slate-900">
                               {selectedSurvey.title}
                             </h3>
                           </div>
@@ -1426,7 +1426,7 @@ function AdminDashboard() {
 
                         <form
                           onSubmit={(event) => void handleCreateQuestion(event)}
-                          className="mt-5 grid gap-4 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[1.4fr_0.7fr_0.6fr_auto] lg:items-end"
+                          className="mt-5 grid gap-4 rounded-[1.25rem] border border-gray-100 bg-slate-50 p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] lg:grid-cols-[1.4fr_0.7fr_0.6fr_auto] lg:items-end"
                         >
                           <label className="block text-sm font-medium text-slate-700 lg:col-span-1">
                             Teks Pertanyaan
@@ -1435,7 +1435,7 @@ function AdminDashboard() {
                               value={newQuestionText}
                               onChange={(event) => setNewQuestionText(event.target.value)}
                               placeholder="Contoh: Bagaimana penilaian Anda terhadap layanan ini?"
-                              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                             />
                           </label>
 
@@ -1444,7 +1444,7 @@ function AdminDashboard() {
                             <select
                               value={newQuestionType}
                               onChange={(event) => setNewQuestionType(event.target.value as SurveyQuestionFormType)}
-                              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10"
+                              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                             >
                               <option value="dual_likert">Matriks IPA / Dual Likert</option>
                               <option value="text">Isian Bebas / Esai</option>
@@ -1464,7 +1464,7 @@ function AdminDashboard() {
                           <button
                             type="submit"
                             disabled={creatingQuestion}
-                            className="inline-flex items-center justify-center rounded-full bg-[#003366] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0a447f] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex items-center justify-center rounded-full bg-[#003366] px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             {creatingQuestion ? 'Menyimpan...' : 'Tambah Pertanyaan'}
                           </button>
@@ -1477,7 +1477,7 @@ function AdminDashboard() {
                         ) : questionsError ? (
                           <p className="mt-5 text-sm text-red-600">{questionsError}</p>
                         ) : questions.length ? (
-                          <div className="mt-5 overflow-hidden rounded-[1.25rem] border border-slate-200">
+                          <div className="mt-5 overflow-hidden rounded-[1.25rem] border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
                             <div className="overflow-x-auto">
                               <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
                                 <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500">
@@ -1511,7 +1511,7 @@ function AdminDashboard() {
                                           type="button"
                                           onClick={() => void handleDeleteQuestion(question.id)}
                                           disabled={deletingQuestionId === question.id}
-                                          className="inline-flex items-center justify-center rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                          className="inline-flex items-center justify-center rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                           {deletingQuestionId === question.id ? '...' : 'Hapus'}
                                         </button>
@@ -1542,10 +1542,10 @@ function AdminDashboard() {
 
               {activeTab === 'analytics' ? (
                 <>
-                  <section className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6 print:hidden">
+                  <section className="mt-8 rounded-[2rem] border border-gray-100 bg-slate-50 p-5 sm:p-6 print:hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <h2 className="text-lg font-semibold text-slate-900">Raw Data</h2>
+                        <h2 className="text-lg font-semibold tracking-tight text-slate-900">Raw Data</h2>
                         <p className="mt-1 text-sm text-slate-600">
                           Jawaban mentah untuk analisis lanjutan atau ekspor CSV.
                         </p>
@@ -1554,21 +1554,21 @@ function AdminDashboard() {
                         <button
                           type="button"
                           onClick={exportCsv}
-                          className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#ff8a3d]"
+                          className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95"
                         >
                           Export CSV
                         </button>
                         <button
                           type="button"
                           onClick={handlePrintReport}
-                          className="inline-flex items-center justify-center rounded-full bg-[#003366] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0a447f]"
+                          className="inline-flex items-center justify-center rounded-full bg-[#003366] px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95"
                         >
                           Cetak Laporan PDF
                         </button>
                       </div>
                     </div>
 
-                    <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
+                    <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-gray-100 bg-white shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
                       <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
                           <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500">

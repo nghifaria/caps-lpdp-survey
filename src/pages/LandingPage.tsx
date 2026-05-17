@@ -87,15 +87,15 @@ function LandingPage() {
             <p className="mb-4 text-xs font-semibold uppercase tracking-[0.4em] text-white/85">
               LPDP Survey Platform
             </p>
-            <h1 className="mb-8 text-4xl font-bold tracking-[0.06em] text-white drop-shadow-lg md:text-6xl">
+            <h1 className="mb-8 text-4xl font-bold tracking-tight tracking-[0.06em] text-white drop-shadow-lg md:text-6xl">
               SURVEI BEASISWA LPDP
             </h1>
 
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-              <Link
-                to="/guideline"
-                className="rounded-full border-2 border-white bg-white/10 px-8 py-3 text-lg font-semibold uppercase tracking-wide text-white transition-all duration-300 hover:-translate-y-1 hover:bg-white/20 hover:shadow-lg"
-              >
+                <Link
+                  to="/guideline"
+                  className="rounded-full border-2 border-white bg-white/10 px-8 py-3 text-lg font-semibold uppercase tracking-wide text-white transition-all duration-300 hover:-translate-y-1 hover:bg-white/20 hover:shadow-lg"
+                >
                 Guideline
               </Link>
 
@@ -118,7 +118,7 @@ function LandingPage() {
                 <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
                   Survey Hub
                 </p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-[#003366]">
+                <h2 className="mt-3 text-3xl font-semibold tracking-tight tracking-[-0.03em] text-[#003366]">
                   Pilih kuesioner aktif yang ingin Anda isi
                 </h2>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
@@ -132,14 +132,14 @@ function LandingPage() {
                 {availableSurveys.map((survey) => (
                   <article
                     key={survey.id}
-                    className="group rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(0,51,102,0.08)] transition hover:-translate-y-1 hover:border-[#F97316]/30"
+                    className="group rounded-[2rem] border border-gray-100 bg-white p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] transition-all duration-300 ease-in-out transform-gpu hover:-translate-y-1 hover:shadow-lg hover:border-[#F97316]/30"
                   >
                     <div className="flex h-full flex-col justify-between gap-6">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#F97316]">
                           Survei Aktif
                         </p>
-                        <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-[#003366]">
+                        <h3 className="mt-3 text-2xl font-semibold tracking-tight tracking-[-0.03em] text-[#003366]">
                           {survey.title}
                         </h3>
                         <p className="mt-3 text-sm leading-7 text-slate-600">
@@ -149,7 +149,7 @@ function LandingPage() {
 
                       <Link
                         to={`/survey/${survey.id}`}
-                        className="inline-flex w-full items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.28)] transition hover:-translate-y-0.5 hover:bg-[#ff8a3d]"
+                        className="inline-flex w-full items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.28)] transition-all duration-300 hover:brightness-110 active:scale-95"
                       >
                         Mulai Isi Survei
                       </Link>
@@ -158,7 +158,7 @@ function LandingPage() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-[2rem] border border-slate-200 bg-white px-6 py-8 text-sm leading-7 text-slate-600 shadow-[0_24px_60px_rgba(0,51,102,0.08)]">
+              <div className="rounded-[2rem] border border-gray-100 bg-white px-6 py-8 text-sm leading-7 text-slate-600 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)]">
                 Saat ini tidak ada survei aktif untuk Anda.
               </div>
             )}
@@ -167,18 +167,18 @@ function LandingPage() {
 
         <section className="flex min-h-[600px] flex-col md:flex-row">
           <div className="flex flex-1 flex-col justify-center bg-[linear-gradient(144deg,#2050A5_50%,#1C4999_50%)] px-8 py-14 text-white md:px-16">
-            <h2 className="mb-2 text-3xl font-bold tracking-wide">TINGKAT PARTISIPASI</h2>
+            <h2 className="mb-2 text-3xl font-bold tracking-tight tracking-wide">TINGKAT PARTISIPASI</h2>
             <p className="mb-10 text-base opacity-90">per 16 May 2026</p>
 
             <div className="mb-10">
-              <h3 className="-mb-1 text-6xl font-bold transition-all duration-500 md:text-8xl">
+              <h3 className="-mb-1 text-6xl font-bold tracking-tight transition-all duration-500 md:text-8xl">
                 {String(availableSurveys.length).padStart(2, '0')}
               </h3>
               <p className="text-xl font-medium">Survei Aktif</p>
             </div>
 
             <div>
-              <h3 className="-mb-1 text-6xl font-bold transition-all duration-500 md:text-8xl">
+              <h3 className="-mb-1 text-6xl font-bold tracking-tight transition-all duration-500 md:text-8xl">
                 {homeRole === 'admin' ? 'ADMIN' : homeRole === 'awardee' ? 'AWARDEE' : 'GUEST'}
               </h3>
               <p className="text-xl font-medium">Role Saat Ini</p>
@@ -186,7 +186,7 @@ function LandingPage() {
           </div>
 
           <div className="flex flex-1 flex-col justify-center bg-[#FFFCF4] px-8 py-14 text-[#242428] md:px-16">
-            <h2 className="mb-8 text-2xl font-bold leading-snug md:text-4xl">
+            <h2 className="mb-8 text-2xl font-bold tracking-tight leading-snug md:text-4xl">
               SURVEI KEPUASAN PUBLIK ATAS LAYANAN BEASISWA LPDP TAHUN 2026
             </h2>
 
@@ -220,7 +220,7 @@ function LandingPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
               FAQ
             </p>
-            <h3 className="mt-3 text-2xl font-semibold">Pertanyaan yang sering ditanyakan</h3>
+            <h3 className="mt-3 text-2xl font-semibold tracking-tight">Pertanyaan yang sering ditanyakan</h3>
             <p className="mt-3 text-sm leading-7 text-slate-600">
               Buka halaman FAQ untuk melihat penjelasan singkat seputar pengisian survei.
             </p>
@@ -233,7 +233,7 @@ function LandingPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
               Guideline
             </p>
-            <h3 className="mt-3 text-2xl font-semibold">Panduan pengisian survei</h3>
+            <h3 className="mt-3 text-2xl font-semibold tracking-tight">Panduan pengisian survei</h3>
             <p className="mt-3 text-sm leading-7 text-white/75">
               Lihat langkah pengisian dari awal sampai pengiriman jawaban.
             </p>

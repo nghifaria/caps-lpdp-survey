@@ -345,7 +345,7 @@ function SurveyPage() {
           required={question.is_required}
           aria-readonly={autoFilled}
           placeholder="Tulis jawaban di sini"
-          className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10 read-only:cursor-not-allowed read-only:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100"
+          className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 read-only:cursor-not-allowed read-only:bg-slate-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 disabled:opacity-80"
         />
       )
     }
@@ -359,7 +359,7 @@ function SurveyPage() {
           onChange={(event) => updateAnswer(question.id, { textValue: event.target.value })}
           disabled={!isSurveyActive || autoFilled}
           required={question.is_required}
-          className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+          className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 disabled:opacity-80"
         >
           <option value="">Pilih salah satu provinsi</option>
           {options.map((option) => (
@@ -406,7 +406,7 @@ function SurveyPage() {
                     }
                     disabled={!isSurveyActive}
                     required={question.is_required && value === 1}
-                    className="h-4 w-4 border-slate-300 text-[#F97316] focus:ring-[#F97316] disabled:cursor-not-allowed"
+                    className="h-4 w-4 border-slate-300 text-[#F97316] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-shadow disabled:cursor-not-allowed opacity-80"
                   />
                 </label>
               ))}
@@ -431,7 +431,7 @@ function SurveyPage() {
                     }
                     disabled={!isSurveyActive}
                     required={question.is_required && value === 1}
-                    className="h-4 w-4 border-slate-300 text-[#F97316] focus:ring-[#F97316] disabled:cursor-not-allowed"
+                    className="h-4 w-4 border-slate-300 text-[#F97316] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-shadow disabled:cursor-not-allowed opacity-80"
                   />
                 </label>
               ))}
@@ -451,7 +451,7 @@ function SurveyPage() {
                 required
                 rows={4}
                 placeholder="Jelaskan singkat alasan skor kepuasan di bawah 3"
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 disabled:opacity-80"
               />
             </div>
           ) : null}
@@ -651,7 +651,7 @@ function SurveyPage() {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,_#f8fbff_0%,_#eef4fb_100%)] px-4 py-10 text-slate-900 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(0,51,102,0.08)] sm:p-8">
+      <div className="mx-auto max-w-4xl rounded-[2rem] border border-gray-100 bg-white p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] sm:p-8">
         <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
           Survey Shell
         </p>
@@ -665,13 +665,13 @@ function SurveyPage() {
             <button
               type="button"
               onClick={handleBackToHome}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-[#003366] transition hover:text-[#F97316]"
+              className="inline-flex items-center gap-2 rounded-full bg-transparent px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-100 hover:text-slate-900"
             >
               <span aria-hidden="true">←</span>
               Kembali ke Beranda
             </button>
 
-            <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[#003366] sm:text-4xl">
+            <h1 className="text-3xl font-semibold tracking-tight tracking-[-0.04em] text-[#003366] sm:text-4xl">
               {survey?.title}
             </h1>
 
@@ -692,7 +692,7 @@ function SurveyPage() {
             </p>
 
             {totalQuestions > 0 ? (
-              <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mt-6 rounded-2xl border border-gray-100 bg-slate-50 p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
                 <div className="mb-3 flex items-center justify-between gap-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
                   <span>{`Pertanyaan ${currentStep + 1} dari ${totalQuestions}`}</span>
                   <span>{`${Math.round(progressPercentage)}%`}</span>
@@ -724,9 +724,9 @@ function SurveyPage() {
               </div>
             ) : null}
 
-            <section className="mt-8 space-y-6 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-6">
+            <section className="mt-8 space-y-6 rounded-[2rem] border border-gray-100 bg-slate-50 p-5 sm:p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
               {currentQuestion ? (
-                  <article className="relative rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
+              <article className="relative transform-gpu rounded-[1.5rem] border border-gray-100 bg-white p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg">
                     {isAutoFilledQuestion(currentQuestion.id) ? (
                       <span className="absolute right-5 top-5 rounded-full bg-[#003366]/10 px-3 py-1 text-[11px] font-semibold text-[#003366]">
                         ✓ Terisi otomatis dari profil Anda
@@ -738,7 +738,7 @@ function SurveyPage() {
                     </div>
                       <div className="min-w-0 flex-1 pr-40">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-base font-semibold text-slate-900">
+                        <h2 className="text-base font-semibold tracking-tight text-slate-900">
                           {currentQuestion.question_text}
                         </h2>
                         {currentQuestion.is_required ? (
@@ -768,7 +768,7 @@ function SurveyPage() {
                         setCurrentStep((step) => Math.max(step - 1, 0))
                       }}
                       disabled={submitting}
-                      className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex items-center justify-center rounded-full bg-transparent px-6 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Kembali
                     </button>
@@ -779,7 +779,7 @@ function SurveyPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.35)] transition hover:-translate-y-0.5 hover:bg-[#ff8a3d] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                    className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.35)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
                   >
                     {submitting ? 'Memproses...' : 'Selanjutnya'}
                   </button>
@@ -787,7 +787,7 @@ function SurveyPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.35)] transition hover:-translate-y-0.5 hover:bg-[#ff8a3d] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                    className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.35)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
                   >
                     {submitting ? 'Mengirim...' : 'Kirim Survei'}
                   </button>

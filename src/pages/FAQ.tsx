@@ -52,7 +52,7 @@ function FAQ() {
       <Navbar />
 
       <div className="mx-auto max-w-6xl px-5 py-16">
-        <h1 className="mb-5 text-4xl font-bold text-[#003366] md:text-5xl">FAQ</h1>
+        <h1 className="mb-5 text-4xl font-bold tracking-tight text-[#003366] md:text-5xl">FAQ</h1>
         <p className="mx-auto mb-10 max-w-3xl text-base leading-7 text-slate-700 md:text-lg">
           Temukan jawaban singkat untuk pertanyaan umum sebelum mulai mengisi survei.
         </p>
@@ -62,7 +62,7 @@ function FAQ() {
             const isOpen = activeItem === faq.id
 
             return (
-              <div key={faq.id} className="overflow-hidden rounded-2xl bg-[#D97843] text-white shadow-md">
+              <div key={faq.id} className="overflow-hidden rounded-2xl bg-[#D97843] text-white shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)]">
                 <button
                   type="button"
                   onClick={() => toggleItem(faq.id)}
