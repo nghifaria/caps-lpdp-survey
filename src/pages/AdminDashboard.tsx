@@ -15,7 +15,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -122,6 +122,8 @@ function AdminDashboard() {
   const [responses, setResponses] = useState<ResponseWithAnswers[]>([])
   const [selectedProvince, setSelectedProvince] = useState('all')
   const [activeTab, setActiveTab] = useState<'analytics' | 'critical-feedback' | 'users' | 'manage-surveys'>('analytics')
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -863,6 +865,16 @@ function AdminDashboard() {
       year: 'numeric',
     })
 
+  const visibleSurveys = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+
+    return surveys.filter((surveyItem) => {
+      const matchesSearch = !query || surveyItem.title.toLowerCase().includes(query)
+
+      return matchesSearch
+    })
+  }, [searchQuery, surveys])
+
   const activeTabTitleMap: Record<typeof activeTab, string> = {
     analytics: 'Analitik Survei',
     'critical-feedback': 'Kelola Keluhan Kritis',
@@ -1405,6 +1417,7 @@ function AdminDashboard() {
                           disabled={creatingSurvey}
                           className="inline-flex items-center justify-center rounded-full bg-[#de7a49] px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                         >
+                          <Plus size={16} className="mr-2" />
                           {creatingSurvey ? 'Membuat...' : '+ New Survey'}
                         </button>
                       </div>
@@ -1430,6 +1443,27 @@ function AdminDashboard() {
                     >
                       Draft
                     </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsSearchOpen((current) => !current)}
+                      aria-label="Toggle pencarian kuesioner"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#ab924f] bg-white text-[#bd5b2c] transition hover:bg-[#fff8ec]"
+                    >
+                      <Search size={18} />
+                    </button>
+
+                    <div
+                      className={`overflow-hidden transition-all duration-300 ease-out ${isSearchOpen ? 'max-w-[280px] opacity-100' : 'max-w-0 opacity-0'}`}
+                    >
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        placeholder="Cari kuesioner..."
+                        className="w-[280px] rounded-full border border-[#ab924f] bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#de7a49] focus:ring-4 focus:ring-[#de7a49]/10"
+                      />
+                    </div>
                   </div>
 
                   {surveysLoading ? (
@@ -1440,7 +1474,7 @@ function AdminDashboard() {
                     <p className="mt-5 text-sm text-red-600">{surveysError}</p>
                   ) : (
                     <div className="mt-6 space-y-4">
-                      {surveys.map((item) => (
+                      {visibleSurveys.map((item) => (
                         <article
                           key={item.id}
                           className="rounded-xl border border-[#ab924f] bg-white p-4 shadow-[0_4px_18px_-6px_rgba(0,0,0,0.08)] transition-transform duration-300 hover:-translate-y-0.5"
