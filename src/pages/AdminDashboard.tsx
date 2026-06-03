@@ -15,7 +15,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { ArchiveX, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -124,6 +124,8 @@ function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'analytics' | 'critical-feedback' | 'users' | 'manage-surveys'>('analytics')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [activeStatusFilter, setActiveStatusFilter] = useState<'active' | 'archived' | 'draft'>('active')
+  const [surveyIdToDelete, setSurveyIdToDelete] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -679,12 +681,7 @@ function AdminDashboard() {
       return
     }
 
-    const confirmed = window.confirm(`Hapus survei "${targetSurvey.title}"? Tindakan ini tidak bisa dibatalkan.`)
-
-    if (!confirmed) {
-      return
-    }
-
+    setSurveyIdToDelete(null)
     setDeletingSurveyId(surveyId)
 
     const { error: deleteError } = await supabase.from('surveys').delete().eq('id', surveyId)
@@ -869,11 +866,18 @@ function AdminDashboard() {
     const query = searchQuery.trim().toLowerCase()
 
     return surveys.filter((surveyItem) => {
+      const matchesStatus =
+        activeStatusFilter === 'active'
+          ? surveyItem.is_active
+          : activeStatusFilter === 'draft'
+            ? !surveyItem.is_active
+            : false
+
       const matchesSearch = !query || surveyItem.title.toLowerCase().includes(query)
 
-      return matchesSearch
+      return activeStatusFilter === 'archived' ? false : matchesStatus && matchesSearch
     })
-  }, [searchQuery, surveys])
+  }, [activeStatusFilter, searchQuery, surveys])
 
   const activeTabTitleMap: Record<typeof activeTab, string> = {
     analytics: 'Analitik Survei',
@@ -1427,19 +1431,34 @@ function AdminDashboard() {
                   <div className="mt-5 flex flex-wrap items-center gap-3">
                     <button
                       type="button"
-                      className="rounded-full bg-[#de7a49] px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
+                      onClick={() => setActiveStatusFilter('active')}
+                      className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+                        activeStatusFilter === 'active'
+                          ? 'bg-[#de7a49] text-white'
+                          : 'border border-[#ab924f] bg-white text-[#bd5b2c] hover:bg-[#fff8ec]'
+                      }`}
                     >
                       Active
                     </button>
                     <button
                       type="button"
-                      className="rounded-full border border-[#ab924f] bg-white px-5 py-2.5 text-sm font-semibold text-[#bd5b2c] transition hover:bg-[#fff8ec]"
+                      onClick={() => setActiveStatusFilter('archived')}
+                      className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+                        activeStatusFilter === 'archived'
+                          ? 'bg-[#de7a49] text-white'
+                          : 'border border-[#ab924f] bg-white text-[#bd5b2c] hover:bg-[#fff8ec]'
+                      }`}
                     >
                       Archived
                     </button>
                     <button
                       type="button"
-                      className="rounded-full border border-[#ab924f] bg-white px-5 py-2.5 text-sm font-semibold text-[#bd5b2c] transition hover:bg-[#fff8ec]"
+                      onClick={() => setActiveStatusFilter('draft')}
+                      className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+                        activeStatusFilter === 'draft'
+                          ? 'bg-[#de7a49] text-white'
+                          : 'border border-[#ab924f] bg-white text-[#bd5b2c] hover:bg-[#fff8ec]'
+                      }`}
                     >
                       Draft
                     </button>
@@ -1454,7 +1473,7 @@ function AdminDashboard() {
                     </button>
 
                     <div
-                      className={`overflow-hidden transition-all duration-300 ease-out ${isSearchOpen ? 'max-w-[280px] opacity-100' : 'max-w-0 opacity-0'}`}
+                      className={`origin-right overflow-hidden transition-all duration-300 ease-in-out ${isSearchOpen ? 'max-w-[280px] scale-x-100 opacity-100' : 'max-w-0 scale-x-0 opacity-0'}`}
                     >
                       <input
                         type="text"
@@ -1472,6 +1491,18 @@ function AdminDashboard() {
                     </div>
                   ) : surveysError ? (
                     <p className="mt-5 text-sm text-red-600">{surveysError}</p>
+                  ) : activeStatusFilter === 'archived' ? (
+                    <div className="mt-6 rounded-[1.5rem] border border-dashed border-[#ab924f] bg-white px-5 py-10 text-center text-sm text-[#7a5d3a]">
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#de7a49]/10 text-[#de7a49]">
+                        <ArchiveX size={22} />
+                      </div>
+                      <p className="mt-4 text-base font-semibold text-[#2b2b2b]">
+                        Belum ada kuesioner yang diarsipkan.
+                      </p>
+                      <p className="mt-2">
+                        Arsip akan muncul di sini setelah status kuesioner diubah.
+                      </p>
+                    </div>
                   ) : (
                     <div className="mt-6 space-y-4">
                       {visibleSurveys.map((item) => (
@@ -1508,7 +1539,7 @@ function AdminDashboard() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => void handleDeleteSurvey(item.id)}
+                                onClick={() => setSurveyIdToDelete(item.id)}
                                 disabled={deletingSurveyId === item.id}
                                 className="inline-flex items-center gap-2 rounded-xl bg-[#ff5656] px-4 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                               >
@@ -1521,6 +1552,43 @@ function AdminDashboard() {
                       ))}
                     </div>
                   )}
+
+                  {surveyIdToDelete ? (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
+                      <div className="w-full max-w-lg rounded-[1.75rem] border border-[#ab924f] bg-white p-6 shadow-[0_30px_80px_rgba(0,0,0,0.25)]">
+                        <div className="flex items-start gap-4">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+                            <Trash2 size={20} />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold tracking-tight text-[#2b2b2b]">
+                              Hapus kuesioner?
+                            </h3>
+                            <p className="mt-2 text-sm leading-6 text-[#7a5d3a]">
+                              Apakah Anda yakin ingin menghapus kuesioner ini? Tindakan ini akan menghapus seluruh pertanyaan dan respons responden di dalamnya secara permanen.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setSurveyIdToDelete(null)}
+                            className="inline-flex items-center justify-center rounded-full border border-[#ab924f] bg-white px-5 py-3 text-sm font-semibold text-[#bd5b2c] transition hover:bg-[#fff8ec]"
+                          >
+                            Batal
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteSurvey(surveyIdToDelete)}
+                            className="inline-flex items-center justify-center rounded-full bg-[#ff5656] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110"
+                          >
+                            Ya, Hapus
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
 
                   <div className="mt-6 rounded-[1.5rem] border border-gray-100 bg-white p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] sm:p-5">
                     {selectedSurvey ? (

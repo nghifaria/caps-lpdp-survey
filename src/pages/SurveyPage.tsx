@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { supabase } from '../lib/supabase'
 import type { Database } from '../types/database'
@@ -728,9 +728,17 @@ function SurveyPage() {
               {currentQuestion ? (
               <article className="relative transform-gpu rounded-[1.5rem] border border-gray-100 bg-white p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg">
                     {isAutoFilledQuestion(currentQuestion.id) ? (
-                      <span className="absolute right-5 top-5 rounded-full bg-[#003366]/10 px-3 py-1 text-[11px] font-semibold text-[#003366]">
-                        ✓ Terisi otomatis dari profil Anda
-                      </span>
+                      <div className="absolute right-5 top-5 flex flex-col items-end gap-2">
+                        <span className="rounded-full bg-[#003366]/10 px-3 py-1 text-[11px] font-semibold text-[#003366]">
+                          ✓ Terisi otomatis dari profil Anda
+                        </span>
+                        <Link
+                          to="/profile"
+                          className="text-[11px] font-semibold text-[#003366] underline decoration-[#F97316] decoration-2 underline-offset-4 transition hover:text-[#F97316]"
+                        >
+                          👉 Ada data keliru? Perbarui profil Anda di sini
+                        </Link>
+                      </div>
                     ) : null}
                   <div className="flex items-start gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#003366] text-xs font-semibold text-white">
