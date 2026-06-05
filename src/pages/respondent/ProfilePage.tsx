@@ -149,17 +149,24 @@ function ProfilePage() {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,_var(--color-broken-white)_0%,_var(--color-light-grey)_100%)] px-4 py-10 text-ash sm:px-6 lg:px-8 animate-fade-in">
-      <div className="mx-auto max-w-4xl rounded-3xl border border-light-grey bg-white p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] sm:p-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-oren">
-          Profile Management
-        </p>
-        <Link to="/" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-navy transition hover:text-oren">
-          <span aria-hidden="true">←</span>
-          Back to Home
-        </Link>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight tracking-[-0.04em] text-navy sm:text-4xl">
-          Profil Awardee
-        </h1>
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-4">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 rounded-xl border border-light-grey bg-white/80 px-4 py-2 text-sm font-semibold text-ash/80 transition-all hover:bg-white hover:text-ash hover:shadow-sm"
+          >
+            <span aria-hidden="true">←</span>
+            Kembali ke Beranda
+          </Link>
+        </div>
+
+        <div className="rounded-3xl border border-light-grey bg-white p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] sm:p-8">
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-oren">
+            Profile Management
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight tracking-[-0.04em] text-navy sm:text-4xl">
+            Profil Awardee
+          </h1>
 
         {loading ? (
           <LoadingSpinner />
@@ -290,7 +297,8 @@ function ProfilePage() {
           </form>
         )}
       </div>
-    </main>
+    </div>
+  </main>
   )
 }
 

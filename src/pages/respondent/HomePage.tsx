@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import type { Database } from '../../types/database'
@@ -18,11 +18,41 @@ const HomePage = () => {
   const navigate = useNavigate()
   const [homeRole, setHomeRole] = useState<UserRole | null>(null)
   const [availableSurveys, setAvailableSurveys] = useState<SurveyRow[]>([])
+  const [totalResponden, setTotalResponden] = useState<number | null>(null)
+  const [totalAwardees, setTotalAwardees] = useState<number | null>(null)
+
+  const currentDateStr = useMemo(() => {
+    return new Intl.DateTimeFormat('id-ID', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    }).format(new Date())
+  }, [])
+
+  const formatNumber = (val: number | null) => {
+    if (val === null) return '...'
+    return new Intl.NumberFormat('id-ID').format(val)
+  }
 
   useEffect(() => {
     let active = true
 
     async function loadHomeState() {
+      // Fetch dynamic stats for everyone
+      const { count: respCount } = await (supabase
+        .from('responses')
+        .select('*', { count: 'exact', head: true }) as any)
+
+      const { count: profileCount } = await (supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'awardee') as any)
+
+      if (active) {
+        setTotalResponden(respCount ?? 0)
+        setTotalAwardees(profileCount ?? 0)
+      }
+
       const { data: authData } = await supabase.auth.getUser()
       const user = authData.user
 
@@ -221,18 +251,18 @@ const HomePage = () => {
         {/* Left Section */}
         <div className="flex flex-1 flex-col justify-center bg-[linear-gradient(144deg,#2050A5_50%,#1C4999_50%)] px-8 py-14 text-white md:px-16">
           <h2 className="mb-2 text-3xl font-bold tracking-wide">TINGKAT PARTISIPASI</h2>
-          <p className="mb-10 text-base opacity-90">per 31 December 2024</p>
+          <p className="mb-10 text-base opacity-90">per {currentDateStr}</p>
 
           <div className="mb-10">
             <h3 className="-mb-1 text-6xl font-bold transition-all duration-500 md:text-8xl">
-              14.065
+              {formatNumber(totalResponden)}
             </h3>
             <p className="text-xl font-medium">Total Responden</p>
           </div>
 
           <div>
             <h3 className="-mb-1 text-6xl font-bold transition-all duration-500 md:text-8xl">
-              2.789
+              {formatNumber(totalAwardees)}
             </h3>
             <p className="text-xl font-medium">Penerima Beasiswa</p>
           </div>

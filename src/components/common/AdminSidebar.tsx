@@ -12,20 +12,20 @@ const AdminSidebar = () => {
   
   const menuItems = [
     {
-      name: 'Dashboard',
+      name: 'Analytics',
       path: '/admin',
     },
     {
-      name: 'Respondents',
+      name: 'Critical Feedback',
+      path: '/admin/critical-feedback',
+    },
+    {
+      name: 'User Management',
       path: '/admin/respondents',
     },
     {
-      name: 'Surveys',
+      name: 'Kelola Survei',
       path: '/admin/surveys',
-    },
-    {
-      name: 'Reports',
-      path: '/admin/reports',
     },
   ]
 

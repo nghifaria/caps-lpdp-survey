@@ -83,7 +83,7 @@ function App() {
           >
             <Route path="/admin" element={<DashboardPage />} />
             <Route path="/admin/surveys" element={<DashboardPage />} />
-            <Route path="/admin/reports" element={<DashboardPage />} />
+            <Route path="/admin/critical-feedback" element={<DashboardPage />} />
             <Route path="/admin/respondents" element={<DashboardPage />} />
           </Route>
 

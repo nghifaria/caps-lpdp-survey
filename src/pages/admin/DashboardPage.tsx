@@ -166,8 +166,8 @@ function DashboardPage() {
       setActiveTab('manage-surveys')
     } else if (location.pathname === '/admin/respondents') {
       setActiveTab('users')
-    } else if (location.pathname === '/admin/reports') {
-      setActiveTab('analytics')
+    } else if (location.pathname === '/admin/critical-feedback') {
+      setActiveTab('critical-feedback')
     } else {
       setActiveTab('analytics')
     }
@@ -279,27 +279,30 @@ function DashboardPage() {
       }
 
       void loadUsers()
-      void loadSurveys()
 
-      const surveyResult = await supabase
+      // Load surveys list directly inside loadDashboard for robust selection
+      const { data: surveysData, error: surveysListError } = await supabase
         .from('surveys')
         .select('id, title, is_active, created_at')
-        .eq('title', 'Survei Kepuasan Layanan LPDP 2026')
-        .maybeSingle()
+        .order('created_at', { ascending: false })
 
-      if (surveyResult.error) {
+      if (surveysListError) {
         if (!cancelled) {
-          setError(surveyResult.error.message)
-          setLoading(false)
+          setSurveysError(surveysListError.message)
         }
-        return
+      } else if (surveysData && !cancelled) {
+        setSurveys(surveysData as SurveyRow[])
       }
 
-      const resolvedSurvey = surveyResult.data as SurveyRow | null
+      let resolvedSurvey: SurveyRow | null = null
+      if (surveysData && surveysData.length > 0) {
+        const seed = surveysData.find((s) => s.title === 'Survei Kepuasan Layanan LPDP 2026')
+        resolvedSurvey = (seed || surveysData[0]) as SurveyRow
+      }
 
       if (!resolvedSurvey) {
         if (!cancelled) {
-          setError('Survey seed tidak ditemukan.')
+          setError('Belum ada kuesioner terdaftar di database.')
           setLoading(false)
         }
         return
@@ -329,7 +332,30 @@ function DashboardPage() {
     return () => {
       cancelled = true
     }
-  }, [navigate])
+  }, [])
+
+  async function handleSurveyChange(surveyId: string) {
+    const selected = surveys.find((s) => s.id === surveyId)
+    if (!selected) return
+
+    setLoading(true)
+    setError(null)
+    const { data: responsesData, error: respError } = await supabase
+      .from('responses')
+      .select(
+        'id, survey_id, submitted_at, answers(id, response_id, question_id, text_value, score_performance, score_importance, reason, questions(id, question_text, question_type))',
+      )
+      .eq('survey_id', surveyId)
+      .order('submitted_at', { ascending: false })
+
+    if (respError) {
+      setError(respError.message)
+    } else {
+      setSurvey(selected)
+      setResponses((responsesData ?? []) as ResponseWithAnswers[])
+    }
+    setLoading(false)
+  }
 
   const filteredResponses = useMemo(() => {
     if (selectedProvince === 'all') {
@@ -913,6 +939,22 @@ function DashboardPage() {
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-end gap-3 print:hidden">
+            {surveys.length > 0 && (
+              <div className="flex items-center gap-2">
+                <select
+                  id="survey-selector"
+                  value={survey?.id || ''}
+                  onChange={(e) => void handleSurveyChange(e.target.value)}
+                  className="rounded-xl border border-light-grey bg-white px-4 py-2.5 text-sm font-semibold text-ash outline-none transition focus:border-oren focus:ring-4 focus:ring-oren/10 cursor-pointer shadow-sm hover:bg-slate-50"
+                >
+                  {surveys.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <Link
               to="/"
               className="inline-flex items-center justify-center rounded-xl bg-transparent px-5 py-3 text-sm font-semibold text-ash transition-colors hover:bg-light-grey hover:text-ash"
@@ -923,21 +965,6 @@ function DashboardPage() {
         </div>
       )}
 
-      {activeTab === 'analytics' && location.pathname === '/admin/reports' && (
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-oren">
-              Report Center
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ash">
-              Analytics Reports
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-ash/80">
-              Laporan analisis Importance-Performance Analysis (IPA) dan sebaran partisipasi responden.
-            </p>
-          </div>
-        </div>
-      )}
 
       {loading ? (
         <LoadingSpinner />
