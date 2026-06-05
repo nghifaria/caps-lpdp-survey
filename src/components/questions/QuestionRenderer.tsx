@@ -25,6 +25,7 @@ interface QuestionRendererProps {
 }
 
 const questionMap: Record<string, React.ComponentType<any>> = {
+  text: LongTextQuestion,
   short_text: ShortTextQuestion,
   long_text: LongTextQuestion,
   checkbox: CheckBoxQuestion,

@@ -102,24 +102,18 @@ const HomePage = () => {
             ) : homeRole === 'admin' ? (
               <Link
                 to="/admin"
-                className="rounded-full border-2 border-white bg-[#F97316] px-8 py-3 text-lg font-semibold uppercase tracking-wide text-white transition-all duration-300 hover:-translate-y-1 hover:bg-[#ff8a3d] hover:shadow-lg text-center"
+                className="rounded-full border-2 border-white bg-oren px-8 py-3 text-lg font-semibold uppercase tracking-wide text-white transition-all duration-300 hover:-translate-y-1 hover:bg-oren-muda hover:shadow-lg text-center"
               >
-                Ke Dashboard
+                Ke Dashboard Admin
               </Link>
             ) : (
               <Link
                 to="/login"
                 className="rounded-full border-2 border-white bg-oren px-8 py-3 text-lg font-semibold uppercase tracking-wide text-white transition-all duration-300 hover:-translate-y-1 hover:bg-oren-muda hover:shadow-lg text-center"
               >
-                Mulai
+                Isi Sekarang
               </Link>
             )}
-            <Link
-              to="/guideline"
-              className="rounded-full border-2 border-white bg-white/10 px-8 py-3 text-lg font-semibold uppercase tracking-wide text-white transition-all duration-300 hover:-translate-y-1 hover:bg-white/20 hover:shadow-lg text-center"
-            >
-              Guideline
-            </Link>
           </div>
         </div>
       </section>
@@ -128,13 +122,13 @@ const HomePage = () => {
       {homeRole === 'awardee' && (
         <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 w-full">
           <div className="mb-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-oren">
               Survey Hub
             </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight tracking-[-0.03em] text-[#003366]">
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight tracking-[-0.03em] text-navy">
               Pilih kuesioner aktif yang ingin Anda isi
             </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-ash/80">
               Semua survei aktif ditampilkan di bawah ini. Klik kartu yang sesuai untuk memulai.
             </p>
           </div>
@@ -144,24 +138,24 @@ const HomePage = () => {
               {availableSurveys.map((survey) => (
                 <article
                   key={survey.id}
-                  className="group rounded-[2rem] border border-gray-100 bg-white p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] transition-all duration-300 ease-in-out transform-gpu hover:-translate-y-1 hover:shadow-lg hover:border-[#F97316]/30"
+                  className="group rounded-2xl border border-light-grey bg-white p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-all duration-300 ease-in-out transform-gpu hover:-translate-y-1 hover:shadow-lg hover:border-oren/30"
                 >
                   <div className="flex h-full flex-col justify-between gap-6">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#F97316]">
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-oren">
                         Survei Aktif
                       </p>
-                      <h3 className="mt-3 text-2xl font-semibold tracking-tight tracking-[-0.03em] text-[#003366]">
+                      <h3 className="mt-3 text-2xl font-semibold tracking-tight tracking-[-0.03em] text-navy">
                         {survey.title}
                       </h3>
-                      <p className="mt-3 text-sm leading-7 text-slate-600">
+                      <p className="mt-3 text-sm leading-7 text-ash/70">
                         Dibuat pada {formatSurveyDate(survey.created_at)}
                       </p>
                     </div>
 
                     <Link
                       to={`/survey/${survey.id}`}
-                      className="inline-flex w-full items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.28)] transition-all duration-300 hover:brightness-110 active:scale-95 text-center"
+                      className="inline-flex w-full items-center justify-center rounded-xl bg-oren px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(189,91,44,0.28)] transition-all duration-300 hover:brightness-110 active:scale-95 text-center"
                     >
                       Mulai Isi Survei
                     </Link>
@@ -170,12 +164,57 @@ const HomePage = () => {
               ))}
             </div>
           ) : (
-            <div className="rounded-[2rem] border border-gray-100 bg-white px-6 py-8 text-sm leading-7 text-slate-600 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)]">
+            <div className="rounded-2xl border border-light-grey bg-white px-6 py-8 text-sm leading-7 text-ash/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
               Saat ini tidak ada survei aktif untuk Anda.
             </div>
           )}
         </section>
       )}
+
+      {/* Guideline & FAQ Previews - Split Section */}
+      <section className="flex min-h-[400px] flex-col md:flex-row w-full animate-fade-in">
+        {/* Left Block: Guideline */}
+        <div className="flex flex-1 flex-col justify-center bg-[linear-gradient(135deg,#1C4999_0%,#0f2e6b_100%)] px-8 py-16 text-white md:px-16 select-none">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-light-blue mb-2">
+            Panduan Pengisian
+          </p>
+          <h2 className="text-3xl font-bold tracking-wide uppercase mb-4">
+            Petunjuk Pelaksanaan
+          </h2>
+          <p className="mb-8 text-sm leading-7 opacity-90 text-justify max-w-xl">
+            Pahami 8 tahapan pengisian kuesioner mulai dari pengisian data diri, penilaian tahapan pendaftaran, seleksi, hingga penyaluran manfaat beasiswa LPDP secara detail dan sistematis.
+          </p>
+          <div>
+            <Link
+              to="/guideline"
+              className="inline-flex items-center gap-2 rounded-xl bg-oren px-6 py-3 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:bg-oren-muda hover:-translate-y-0.5"
+            >
+              Lihat Panduan Lengkap <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* Right Block: FAQ */}
+        <div className="flex flex-1 flex-col justify-center bg-[#242424] px-8 py-16 text-white md:px-16 select-none">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-oren mb-2">
+            Tanya Jawab
+          </p>
+          <h2 className="text-3xl font-bold tracking-wide uppercase mb-4">
+            Frequently Asked Questions
+          </h2>
+          <p className="mb-8 text-sm leading-7 opacity-90 text-justify max-w-xl">
+            Ada pertanyaan tentang penyimpanan draft pengisian, keamanan kerahasiaan data pribadi, atau cara melaporkan kendala teknis sistem? Temukan ringkasan jawabannya langsung di sini.
+          </p>
+          <div>
+            <Link
+              to="/faq"
+              className="inline-flex items-center gap-2 rounded-xl bg-transparent border border-light-grey px-6 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/10 hover:-translate-y-0.5"
+            >
+              Lihat Semua FAQ <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* Stats Section */}
       <section className="flex min-h-[600px] flex-col md:flex-row w-full">

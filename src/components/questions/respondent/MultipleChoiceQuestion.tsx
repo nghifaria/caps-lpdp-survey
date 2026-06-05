@@ -1,6 +1,6 @@
 interface QuestionProps {
   question: any
-  value: string
+  value: string | null | undefined
   onChange: (val: string) => void
   preview?: boolean
 }
@@ -9,21 +9,31 @@ export default function MultipleChoiceQuestion({ question, value, onChange, prev
   const options = Array.isArray(question?.options) ? question.options : []
 
   return (
-    <div className="mt-4 space-y-2">
-      {options.map((option: string, idx: number) => (
-        <label key={idx} className="flex items-center gap-3">
-          <input
-            type="radio"
-            name={`mc-${question?.id}`}
-            value={option}
-            checked={value === option}
-            onChange={() => onChange(option)}
-            disabled={preview}
-            className="h-4 w-4 border-gray-300 text-oren-muda focus:ring-oren-muda"
-          />
-          <span className="text-sm text-slate-700">{option}</span>
-        </label>
-      ))}
+    <div className="mt-4 space-y-3">
+      {options.map((option: string, idx: number) => {
+        const isSelected = value === option
+        return (
+          <label
+            key={idx}
+            className={`flex items-center gap-3 cursor-pointer p-4 rounded-2xl border transition-all duration-200 select-none ${
+              isSelected
+                ? 'border-oren bg-oren-muda/5 text-ash font-medium shadow-sm'
+                : 'border-light-grey bg-white text-ash/70 hover:bg-slate-50'
+            } ${preview ? 'cursor-not-allowed opacity-80' : ''}`}
+          >
+            <input
+              type="radio"
+              name={`mc-${question?.id}`}
+              value={option}
+              checked={isSelected}
+              onChange={() => !preview && onChange(option)}
+              disabled={preview}
+              className="h-4 w-4 border-light-grey text-oren focus:ring-oren-muda cursor-pointer disabled:cursor-not-allowed"
+            />
+            <span className="text-sm">{option}</span>
+          </label>
+        )
+      })}
     </div>
   )
 }

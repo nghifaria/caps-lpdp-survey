@@ -49,15 +49,18 @@ const guidelineSteps: GuidelineStep[] = [
 
 const GuidelinePage = () => {
   return (
-    <section className="min-h-screen bg-[#FFFCF4] px-5 py-16">
-      <div className="mx-auto max-w-6xl text-center">
+    <section className="min-h-screen bg-broken-white px-5 py-16 animate-fade-in">
+      <div className="mx-auto max-w-4xl text-center">
         {/* Title */}
-        <h1 className="mb-5 text-4xl font-bold uppercase text-black md:text-6xl">
-          GUIDELINE
+        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-oren mb-2">
+          Panduan
+        </p>
+        <h1 className="mb-5 text-4xl font-bold uppercase tracking-tight text-navy md:text-6xl">
+          Guideline
         </h1>
 
         {/* Description */}
-        <p className="mx-auto mb-16 max-w-4xl text-base leading-7 text-black md:text-lg">
+        <p className="mx-auto mb-16 max-w-3xl text-sm leading-7 text-ash/80 md:text-base">
           Ikuti langkah di bawah ini agar proses pengisian survei berjalan lancar dari awal sampai akhir.
         </p>
 
@@ -66,13 +69,13 @@ const GuidelinePage = () => {
           {guidelineSteps.map((step) => (
             <div
               key={step.id}
-              className="cursor-pointer border-b border-gray-300 pb-6 transition-all duration-300 hover:translate-x-2"
+              className="cursor-pointer border-b border-light-grey pb-6 transition-all duration-300 hover:translate-x-2 select-none"
             >
-              <span className="mr-3 text-sm text-[#DE7A49] md:text-base">
+              <span className="mr-3 text-sm font-bold text-oren md:text-base">
                 {step.number}
               </span>
 
-              <span className="text-lg font-semibold text-black md:text-3xl">
+              <span className="text-lg font-semibold text-ash md:text-2xl transition-colors hover:text-oren">
                 {step.title}
               </span>
             </div>

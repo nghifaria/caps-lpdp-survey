@@ -47,31 +47,36 @@ const FaqPage = () => {
   }
 
   return (
-    <section className="bg-broken-white px-5 py-16 text-center">
+    <section className="bg-broken-white px-5 py-16 text-center animate-fade-in">
       <div className="mx-auto max-w-6xl">
         {/* Title */}
-        <h1 className="mb-5 text-4xl font-bold text-ash md:text-5xl">SOME FAQS</h1>
+        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-oren mb-2">
+          FAQ
+        </p>
+        <h1 className="mb-5 text-4xl font-bold tracking-tight text-navy md:text-5xl">
+          Pertanyaan Umum
+        </h1>
 
         {/* Description */}
-        <p className="mx-auto mb-10 max-w-3xl text-base leading-7 text-black md:text-lg">
+        <p className="mx-auto mb-12 max-w-3xl text-sm leading-7 text-ash/80 md:text-base">
           Temukan jawaban singkat untuk pertanyaan umum sebelum mulai mengisi survei.
         </p>
 
         {/* FAQ Items */}
-        <div className="mx-auto max-w-4xl space-y-5">
+        <div className="mx-auto max-w-5xl space-y-4">
           {faqData.map((faq) => {
             const isOpen = activeItem === faq.id
 
             return (
               <div
                 key={faq.id}
-                className="overflow-hidden rounded-2xl bg-[#DE7A49] text-left text-white shadow-md"
+                className="overflow-hidden rounded-2xl bg-oren-muda text-left text-white shadow-md transition-all duration-300 hover:shadow-lg"
               >
                 {/* Question */}
                 <button
                   type="button"
                   onClick={() => toggleItem(faq.id)}
-                  className="flex w-full items-center justify-between px-6 py-5 text-left transition-all duration-300"
+                  className="flex w-full items-center justify-between px-6 py-5 text-left transition-all duration-300 cursor-pointer hover:bg-black/5"
                 >
                   <span className="text-base font-semibold md:text-lg">
                     {faq.question}
@@ -86,7 +91,7 @@ const FaqPage = () => {
                   }`}
                 >
                   <div className="overflow-hidden">
-                    <p className="px-6 pb-5 text-sm leading-7 md:text-base">
+                    <p className="px-6 pb-5 text-sm leading-7 md:text-base border-t border-white/20 pt-4">
                       {faq.answer}
                     </p>
                   </div>

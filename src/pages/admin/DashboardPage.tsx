@@ -94,7 +94,15 @@ type AdminUserRow = {
   updated_at: string
 }
 
-type SurveyQuestionFormType = 'dual_likert' | 'text'
+type SurveyQuestionFormType =
+  | 'dual_likert'
+  | 'text'
+  | 'short_text'
+  | 'long_text'
+  | 'checkbox'
+  | 'dropdown'
+  | 'multiple_choice'
+  | 'true_false'
 
 const provinceOptions = ['Jakarta', 'Jawa Barat', 'Jawa Tengah', 'Jawa Timur']
 
@@ -150,6 +158,7 @@ function DashboardPage() {
   const [newQuestionRequired, setNewQuestionRequired] = useState(true)
   const [creatingQuestion, setCreatingQuestion] = useState(false)
   const [deletingQuestionId, setDeletingQuestionId] = useState<string | null>(null)
+  const [newQuestionOptionsText, setNewQuestionOptionsText] = useState('')
 
   // Map sub-routes to active tabs
   useEffect(() => {
@@ -762,6 +771,17 @@ function DashboardPage() {
           }
         : null
 
+    const isChoiceType = ['checkbox', 'dropdown', 'multiple_choice'].includes(newQuestionType)
+    const options = isChoiceType
+      ? newQuestionOptionsText.split(',').map((s) => s.trim()).filter(Boolean)
+      : null
+
+    if (isChoiceType && (!options || options.length === 0)) {
+      toast.error('Wajib mengisi minimal satu pilihan untuk tipe data ini.')
+      setCreatingQuestion(false)
+      return
+    }
+
     const { error: insertError } = await supabase
       .from('questions')
       .insert([
@@ -770,7 +790,7 @@ function DashboardPage() {
           question_text: questionText,
           question_type: newQuestionType,
           is_required: newQuestionRequired,
-          options: null,
+          options: options,
           branching_logic: branchingLogic,
         } as never,
       ])
@@ -784,6 +804,7 @@ function DashboardPage() {
     setNewQuestionText('')
     setNewQuestionType('dual_likert')
     setNewQuestionRequired(true)
+    setNewQuestionOptionsText('')
     await loadQuestions(selectedSurveyId)
     toast.success('Pertanyaan baru berhasil ditambahkan.')
     setCreatingQuestion(false)
@@ -1541,9 +1562,28 @@ function DashboardPage() {
                                       className="mt-2 w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-navy/30 focus:ring-offset-1 animate-fade-in"
                                     >
                                       <option value="dual_likert">Matriks IPA / Dual Likert</option>
-                                      <option value="text">Isian Bebas / Esai</option>
+                                      <option value="text">Isian Bebas / Esai (Legacy)</option>
+                                      <option value="short_text">Short Text / Jawaban Singkat</option>
+                                      <option value="long_text">Long Text / Jawaban Panjang</option>
+                                      <option value="checkbox">Checkbox (Banyak Pilihan)</option>
+                                      <option value="dropdown">Dropdown</option>
+                                      <option value="multiple_choice">Multiple Choice (Pilihan Ganda)</option>
+                                      <option value="true_false">True / False (Benar / Salah)</option>
                                     </select>
                                   </label>
+
+                                  {['checkbox', 'dropdown', 'multiple_choice'].includes(newQuestionType) && (
+                                    <label className="block text-sm font-medium text-ash lg:col-span-3 animate-fade-in">
+                                      Pilihan Jawaban (pisahkan dengan koma)
+                                      <input
+                                        type="text"
+                                        value={newQuestionOptionsText}
+                                        onChange={(event) => setNewQuestionOptionsText(event.target.value)}
+                                        placeholder="Contoh: Sangat Puas, Cukup Puas, Tidak Puas"
+                                        className="mt-2 w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-navy/30 focus:ring-offset-1"
+                                      />
+                                    </label>
+                                  )}
 
                                   <label className="flex items-center gap-3 rounded-xl border border-light-grey bg-white px-4 py-3 text-sm font-medium text-ash cursor-pointer select-none">
                                     <input
@@ -1592,7 +1632,21 @@ function DashboardPage() {
                                                 <span className="rounded-xl bg-butter/45 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-ash/90">
                                                   {question.question_type === 'dual_likert'
                                                     ? 'Dual Likert'
-                                                    : 'Esai'}
+                                                    : question.question_type === 'text'
+                                                      ? 'Esai (Legacy)'
+                                                      : question.question_type === 'short_text'
+                                                        ? 'Jawaban Singkat'
+                                                        : question.question_type === 'long_text'
+                                                          ? 'Jawaban Panjang'
+                                                          : question.question_type === 'checkbox'
+                                                            ? 'Checkbox'
+                                                            : question.question_type === 'dropdown'
+                                                              ? 'Dropdown'
+                                                              : question.question_type === 'multiple_choice'
+                                                                ? 'Pilihan Ganda'
+                                                                : question.question_type === 'true_false'
+                                                                  ? 'Benar / Salah'
+                                                                  : question.question_type}
                                                 </span>
                                               </td>
                                               <td className="px-4 py-3 text-ash/80">

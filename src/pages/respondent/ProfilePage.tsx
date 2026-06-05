@@ -148,16 +148,16 @@ function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,_#eef4fb_0%,_#ffffff_100%)] px-4 py-10 text-slate-900 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl rounded-[2rem] border border-gray-100 bg-white p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] sm:p-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
+    <main className="min-h-screen bg-[linear-gradient(180deg,_var(--color-broken-white)_0%,_var(--color-light-grey)_100%)] px-4 py-10 text-ash sm:px-6 lg:px-8 animate-fade-in">
+      <div className="mx-auto max-w-4xl rounded-3xl border border-light-grey bg-white p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] sm:p-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-oren">
           Profile Management
         </p>
-        <Link to="/" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#003366] transition hover:text-[#F97316]">
+        <Link to="/" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-navy transition hover:text-oren">
           <span aria-hidden="true">←</span>
           Back to Home
         </Link>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight tracking-[-0.04em] text-[#003366] sm:text-4xl">
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight tracking-[-0.04em] text-navy sm:text-4xl">
           Profil Awardee
         </h1>
 
@@ -168,17 +168,17 @@ function ProfilePage() {
         ) : (
           <form className="mt-8 grid gap-8 lg:grid-cols-[0.8fr_1.2fr]" onSubmit={handleSubmit}>
             <div className="space-y-4">
-              <div className="rounded-[2rem] border border-gray-100 bg-slate-50 p-5 text-center shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
-                <div className="mx-auto flex h-40 w-40 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#003366]/5 shadow-[0_16px_40px_rgba(0,51,102,0.12)]">
+              <div className="rounded-2xl border border-light-grey bg-butter/10 p-5 text-center shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)]">
+                <div className="mx-auto flex h-40 w-40 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-navy/5 shadow-[0_16px_40px_rgba(28,73,153,0.12)]">
                   {previewUrl ? (
                     <img src={previewUrl} alt="Preview avatar" className="h-full w-full object-cover" />
                   ) : (
-                    <span className="text-sm font-semibold uppercase tracking-[0.2em] text-[#003366]">
+                    <span className="text-sm font-semibold uppercase tracking-[0.2em] text-navy">
                       Avatar
                     </span>
                   )}
                 </div>
-                <label className="mt-5 block text-sm font-medium text-slate-700 cursor-pointer" htmlFor="avatar-file">
+                <label className="mt-5 block text-sm font-medium text-ash cursor-pointer hover:text-oren transition" htmlFor="avatar-file">
                   Unggah foto profil
                 </label>
                 <input
@@ -186,14 +186,14 @@ function ProfilePage() {
                   type="file"
                   accept="image/*"
                   onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                  className="mt-2 w-full rounded-2xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-4 focus:ring-oren/10 cursor-pointer"
                 />
               </div>
             </div>
 
             <div className="space-y-5">
               <div>
-                <label className="text-sm font-medium text-slate-700" htmlFor="full-name">
+                <label className="text-sm font-medium text-ash" htmlFor="full-name">
                   Full Name
                 </label>
                 <input
@@ -201,13 +201,13 @@ function ProfilePage() {
                   type="text"
                   value={fullName}
                   onChange={(event) => setFullName(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                  className="mt-2 w-full rounded-2xl border border-light-grey px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-4 focus:ring-oren/10 bg-white"
                 />
               </div>
 
               <div className="grid gap-5 md:grid-cols-2">
                 <div>
-                  <label className="text-sm font-medium text-slate-700" htmlFor="nik">
+                  <label className="text-sm font-medium text-ash" htmlFor="nik">
                     NIK
                   </label>
                   <input
@@ -216,12 +216,12 @@ function ProfilePage() {
                     value={nik}
                     onChange={(event) => setNik(event.target.value)}
                     placeholder="Contoh: 3174xxxxxxxxxxxx"
-                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                    className="mt-2 w-full rounded-2xl border border-light-grey px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-4 focus:ring-oren/10 bg-white"
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-slate-700" htmlFor="date-of-birth">
+                  <label className="text-sm font-medium text-ash" htmlFor="date-of-birth">
                     Tanggal Lahir
                   </label>
                   <input
@@ -229,19 +229,19 @@ function ProfilePage() {
                     type="date"
                     value={dateOfBirth}
                     onChange={(event) => setDateOfBirth(event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                    className="mt-2 w-full rounded-2xl border border-light-grey px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-4 focus:ring-oren/10 bg-white"
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-slate-700" htmlFor="province">
+                  <label className="text-sm font-medium text-ash" htmlFor="province">
                     Asal Provinsi
                   </label>
                   <select
                     id="province"
                     value={province}
                     onChange={(event) => setProvince(event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                    className="mt-2 w-full rounded-2xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-4 focus:ring-oren/10 cursor-pointer"
                   >
                     <option value="">Pilih provinsi</option>
                     {provinceOptions.map((item) => (
@@ -253,7 +253,7 @@ function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-slate-700" htmlFor="university">
+                  <label className="text-sm font-medium text-ash" htmlFor="university">
                     Asal Perguruan Tinggi / Universitas
                   </label>
                   <input
@@ -262,19 +262,19 @@ function ProfilePage() {
                     value={university}
                     onChange={(event) => setUniversity(event.target.value)}
                     placeholder="Contoh: Universitas Indonesia"
-                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                    className="mt-2 w-full rounded-2xl border border-light-grey px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-4 focus:ring-oren/10 bg-white"
                   />
                 </div>
               </div>
 
               {success ? (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 animate-fade-in">
                   {success}
                 </div>
               ) : null}
 
               {error ? (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 animate-fade-in">
                   {error}
                 </div>
               ) : null}
@@ -282,7 +282,7 @@ function ProfilePage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.28)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer"
+                className="inline-flex items-center justify-center rounded-xl bg-oren px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(189,91,44,0.28)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
               >
                 {saving ? 'Menyimpan...' : 'Simpan Profil'}
               </button>

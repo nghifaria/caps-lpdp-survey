@@ -120,6 +120,7 @@ function SurveyPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [isSubmitted, setIsSubmitted] = useState(false)
   const isSurveyActive = survey?.is_active ?? false
   const totalQuestions = questions.length
   const currentQuestion = questions[currentStep] ?? null
@@ -217,7 +218,11 @@ function SurveyPage() {
       const nextAnswers = { ...currentAnswers }
 
       for (const question of questions) {
-        if (question.question_type !== 'short_text' && question.question_type !== 'dropdown') {
+        if (
+          question.question_type !== 'short_text' &&
+          question.question_type !== 'dropdown' &&
+          question.question_type !== 'text'
+        ) {
           continue
         }
 
@@ -373,22 +378,8 @@ function SurveyPage() {
     for (const question of questions) {
       const answer = answers[question.id] ?? emptyAnswerDraft
 
-      if (question.question_type === 'short_text' && !answer.textValue.trim()) {
-        setSubmitError(`Pertanyaan "${question.question_text}" wajib diisi.`)
-        toast.error(`Pertanyaan "${question.question_text}" wajib diisi.`)
-        setSubmitting(false)
-        return
-      }
-
-      if (question.question_type === 'dropdown' && !answer.textValue.trim()) {
-        setSubmitError(`Pertanyaan "${question.question_text}" wajib dipilih.`)
-        toast.error(`Pertanyaan "${question.question_text}" wajib dipilih.`)
-        setSubmitting(false)
-        return
-      }
-
       if (question.question_type === 'dual_likert') {
-        if (!answer.scoreImportance || !answer.scorePerformance) {
+        if (question.is_required && (!answer.scoreImportance || !answer.scorePerformance)) {
           setSubmitError(`Pertanyaan "${question.question_text}" wajib diisi lengkap.`)
           toast.error(`Pertanyaan "${question.question_text}" wajib diisi lengkap.`)
           setSubmitting(false)
@@ -400,6 +391,35 @@ function SurveyPage() {
           toast.error(`Alasan wajib diisi untuk pertanyaan "${question.question_text}".`)
           setSubmitting(false)
           return
+        }
+      } else {
+        if (question.is_required) {
+          let isEmpty = !answer.textValue.trim()
+          if (question.question_type === 'checkbox' && !isEmpty) {
+            try {
+              const parsed = JSON.parse(answer.textValue)
+              if (Array.isArray(parsed) && parsed.length === 0) {
+                isEmpty = true
+              }
+            } catch {
+              // Not valid JSON, fallback to text check
+            }
+          }
+
+          if (isEmpty) {
+            const isSelectable = [
+              'dropdown',
+              'checkbox',
+              'multiple_choice',
+              'true_false',
+              'likert',
+            ].includes(question.question_type)
+            const verb = isSelectable ? 'dipilih' : 'diisi'
+            setSubmitError(`Pertanyaan "${question.question_text}" wajib ${verb}.`)
+            toast.error(`Pertanyaan "${question.question_text}" wajib ${verb}.`)
+            setSubmitting(false)
+            return
+          }
         }
       }
     }
@@ -424,7 +444,7 @@ function SurveyPage() {
     const answerPayloads: AnswerInsert[] = questions.map((question) => {
       const answer = answers[question.id] ?? emptyAnswerDraft
 
-      if (question.question_type === 'short_text' || question.question_type === 'dropdown') {
+      if (question.question_type !== 'dual_likert') {
         return {
           response_id: responseResult.data.id,
           question_id: question.id,
@@ -456,7 +476,6 @@ function SurveyPage() {
       return
     }
 
-    setSuccessMessage('Jawaban berhasil dikirim. Terima kasih.')
     toast.success('Jawaban berhasil dikirim. Terima kasih.')
     if (draftKey) {
       localStorage.removeItem(draftKey)
@@ -465,6 +484,7 @@ function SurveyPage() {
     setAnswers({})
     setCurrentStep(0)
     setSubmitting(false)
+    setIsSubmitted(true)
   }
 
   useEffect(() => {
@@ -530,10 +550,38 @@ function SurveyPage() {
     }
   }, [id])
 
+  if (isSubmitted) {
+    return (
+      <main className="min-h-screen bg-[linear-gradient(180deg,_var(--color-broken-white)_0%,_var(--color-light-grey)_100%)] px-4 py-10 text-ash sm:px-6 lg:px-8 animate-fade-in">
+        <div className="mx-auto max-w-2xl rounded-3xl border border-light-grey bg-white p-8 text-center shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] sm:p-12">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 shadow-sm mb-6">
+            <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-navy">
+            Survei Berhasil Dikirim!
+          </h1>
+          <p className="mt-4 text-sm leading-7 text-ash/80">
+            Terima kasih atas partisipasi Anda. Jawaban Anda telah berhasil kami simpan dan akan digunakan sebagai bahan evaluasi serta perbaikan layanan beasiswa LPDP ke depan.
+          </p>
+          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate('/', { replace: true })}
+              className="inline-flex items-center justify-center rounded-xl bg-oren px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(189,91,44,0.28)] transition-all duration-300 hover:brightness-110 active:scale-95 cursor-pointer w-full sm:w-auto"
+            >
+              Kembali ke Beranda
+            </button>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,_#f8fbff_0%,_#eef4fb_100%)] px-4 py-10 text-slate-900 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl rounded-[2rem] border border-gray-100 bg-white p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] sm:p-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#F97316]">
+    <main className="min-h-screen bg-[linear-gradient(180deg,_var(--color-broken-white)_0%,_var(--color-light-grey)_100%)] px-4 py-10 text-ash sm:px-6 lg:px-8 animate-fade-in">
+      <div className="mx-auto max-w-4xl rounded-3xl border border-light-grey bg-white p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] sm:p-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-oren">
           Survey Shell
         </p>
 
@@ -546,19 +594,19 @@ function SurveyPage() {
             <button
               type="button"
               onClick={handleBackToHome}
-              className="inline-flex items-center gap-2 rounded-full bg-transparent px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-100 hover:text-slate-900 cursor-pointer"
+              className="inline-flex items-center gap-2 rounded-xl border border-light-grey bg-transparent px-4 py-2 text-sm font-semibold text-ash/80 transition-colors hover:bg-slate-50 hover:text-ash cursor-pointer"
             >
               <span aria-hidden="true">←</span>
               Kembali ke Beranda
             </button>
 
-            <h1 className="text-3xl font-semibold tracking-tight tracking-[-0.04em] text-[#003366] sm:text-4xl mt-3">
+            <h1 className="text-3xl font-semibold tracking-tight tracking-[-0.04em] text-navy sm:text-4xl mt-3">
               {survey?.title}
             </h1>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <span
-                className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
+                className={`rounded-xl px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
                   isSurveyActive
                     ? 'bg-emerald-50 text-emerald-700'
                     : 'bg-red-50 text-red-700'
@@ -568,19 +616,19 @@ function SurveyPage() {
               </span>
             </div>
 
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-ash/80">
               Isi pertanyaan berikut untuk membantu kami membaca pengalaman layanan LPDP secara lebih akurat.
             </p>
 
             {totalQuestions > 0 ? (
-              <div className="mt-6 rounded-2xl border border-gray-100 bg-slate-50 p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
-                <div className="mb-3 flex items-center justify-between gap-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+              <div className="mt-6 rounded-2xl border border-light-grey bg-white p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)]">
+                <div className="mb-3 flex items-center justify-between gap-3 text-xs font-medium uppercase tracking-[0.18em] text-ash/50">
                   <span>{`Pertanyaan ${currentStep + 1} dari ${totalQuestions}`}</span>
                   <span>{`${Math.round(progressPercentage)}%`}</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-slate-200">
                   <div
-                    className="h-full rounded-full bg-[#F97316] transition-all duration-300 ease-out"
+                    className="h-full rounded-full bg-oren transition-all duration-300 ease-out"
                     style={{ width: `${progressPercentage}%` }}
                   />
                 </div>
@@ -588,63 +636,63 @@ function SurveyPage() {
             ) : null}
 
             {!isSurveyActive ? (
-              <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 Periode survei sudah ditutup. Jawaban baru tidak dapat dikirim.
               </div>
             ) : null}
 
             {submitError ? (
-              <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {submitError}
               </div>
             ) : null}
 
             {successMessage ? (
-              <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                 {successMessage}
               </div>
             ) : null}
 
-            <section className="mt-8 space-y-6 rounded-[2rem] border border-gray-100 bg-slate-50 p-5 sm:p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+            <div className="mt-8 space-y-6">
               {currentQuestion ? (
-                <article className="relative transform-gpu rounded-[1.5rem] border border-gray-100 bg-white p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg">
+                <div className="relative">
                   {isAutoFilledQuestion(currentQuestion.id) ? (
-                    <div className="absolute right-5 top-5 flex flex-col items-end gap-2">
-                      <span className="rounded-full bg-[#003366]/10 px-3 py-1 text-[11px] font-semibold text-[#003366]">
+                    <div className="absolute right-0 top-0 flex flex-col items-end gap-2">
+                      <span className="rounded-xl bg-navy/10 px-3 py-1 text-[11px] font-semibold text-navy">
                         ✓ Terisi otomatis dari profil Anda
                       </span>
                       <Link
                         to="/profile"
-                        className="text-[11px] font-semibold text-[#003366] underline decoration-[#F97316] decoration-2 underline-offset-4 transition hover:text-[#F97316]"
+                        className="text-[11px] font-semibold text-navy underline decoration-oren decoration-2 underline-offset-4 transition hover:text-oren"
                       >
                         👉 Ada data keliru? Perbarui profil Anda di sini
                       </Link>
                     </div>
                   ) : null}
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#003366] text-xs font-semibold text-white">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy text-sm font-semibold text-white">
                       {currentStep + 1}
                     </div>
                     <div className="min-w-0 flex-1 pr-40">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-base font-semibold tracking-tight text-slate-900">
+                        <h2 className="text-lg font-semibold tracking-tight text-ash">
                           {currentQuestion.question_text}
                         </h2>
                         {currentQuestion.is_required ? (
-                          <span className="rounded-full bg-[#F97316]/10 px-2.5 py-1 text-xs font-medium text-[#F97316]">
+                          <span className="rounded-xl bg-oren/10 px-2.5 py-1 text-xs font-medium text-oren">
                             Wajib
                           </span>
                         ) : null}
                       </div>
-                      <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
+                      <p className="mt-1 text-xs uppercase tracking-[0.18em] text-ash/40">
                         {currentQuestion.question_type}
                       </p>
                       {renderQuestionInput(currentQuestion)}
                     </div>
                   </div>
-                </article>
+                </div>
               ) : null}
-            </section>
+            </div>
 
             {isSurveyActive ? (
               <div className="mt-8 flex items-center justify-between gap-3">
@@ -657,7 +705,7 @@ function SurveyPage() {
                         setCurrentStep((step) => Math.max(step - 1, 0))
                       }}
                       disabled={submitting}
-                      className="inline-flex items-center justify-center rounded-full bg-transparent px-6 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                      className="inline-flex items-center justify-center rounded-xl border border-light-grey bg-transparent px-6 py-3 text-sm font-semibold text-ash/80 transition-colors hover:bg-slate-50 hover:text-ash disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                     >
                       Kembali
                     </button>
@@ -668,7 +716,7 @@ function SurveyPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.35)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer"
+                    className="inline-flex items-center justify-center rounded-xl bg-oren px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(189,91,44,0.28)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer"
                   >
                     {submitting ? 'Memproses...' : 'Selanjutnya'}
                   </button>
@@ -676,7 +724,7 @@ function SurveyPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.35)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer"
+                    className="inline-flex items-center justify-center rounded-xl bg-oren px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(189,91,44,0.28)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer"
                   >
                     {submitting ? 'Mengirim...' : 'Kirim Survei'}
                   </button>
