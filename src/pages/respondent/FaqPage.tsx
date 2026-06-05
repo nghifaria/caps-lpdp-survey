@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import Navbar from '../components/Navbar'
 
 type FaqItem = {
   id: string
@@ -40,45 +39,56 @@ const faqData: FaqItem[] = [
   },
 ]
 
-function FAQ() {
-  const [activeItem, setActiveItem] = useState('faq1')
+const FaqPage = () => {
+  const [activeItem, setActiveItem] = useState('')
 
-  function toggleItem(id: string) {
+  const toggleItem = (id: string) => {
     setActiveItem(activeItem === id ? '' : id)
   }
 
   return (
-    <main className="min-h-screen bg-[#FFFCF4] text-center text-[#242428]">
-      <Navbar />
+    <section className="bg-broken-white px-5 py-16 text-center">
+      <div className="mx-auto max-w-6xl">
+        {/* Title */}
+        <h1 className="mb-5 text-4xl font-bold text-ash md:text-5xl">SOME FAQS</h1>
 
-      <div className="mx-auto max-w-6xl px-5 py-16">
-        <h1 className="mb-5 text-4xl font-bold tracking-tight text-[#003366] md:text-5xl">FAQ</h1>
-        <p className="mx-auto mb-10 max-w-3xl text-base leading-7 text-slate-700 md:text-lg">
+        {/* Description */}
+        <p className="mx-auto mb-10 max-w-3xl text-base leading-7 text-black md:text-lg">
           Temukan jawaban singkat untuk pertanyaan umum sebelum mulai mengisi survei.
         </p>
 
-        <div className="mx-auto max-w-4xl space-y-5 text-left">
+        {/* FAQ Items */}
+        <div className="mx-auto max-w-4xl space-y-5">
           {faqData.map((faq) => {
             const isOpen = activeItem === faq.id
 
             return (
-              <div key={faq.id} className="overflow-hidden rounded-2xl bg-[#D97843] text-white shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)]">
+              <div
+                key={faq.id}
+                className="overflow-hidden rounded-2xl bg-[#DE7A49] text-left text-white shadow-md"
+              >
+                {/* Question */}
                 <button
                   type="button"
                   onClick={() => toggleItem(faq.id)}
                   className="flex w-full items-center justify-between px-6 py-5 text-left transition-all duration-300"
                 >
-                  <span className="text-base font-semibold md:text-lg">{faq.question}</span>
+                  <span className="text-base font-semibold md:text-lg">
+                    {faq.question}
+                  </span>
                   <span className="text-2xl font-bold">{isOpen ? '−' : '+'}</span>
                 </button>
 
+                {/* Answer */}
                 <div
                   className={`grid transition-all duration-300 ${
                     isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
                   }`}
                 >
                   <div className="overflow-hidden">
-                    <p className="px-6 pb-5 text-sm leading-7 md:text-base">{faq.answer}</p>
+                    <p className="px-6 pb-5 text-sm leading-7 md:text-base">
+                      {faq.answer}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -86,8 +96,8 @@ function FAQ() {
           })}
         </div>
       </div>
-    </main>
+    </section>
   )
 }
 
-export default FAQ
+export default FaqPage

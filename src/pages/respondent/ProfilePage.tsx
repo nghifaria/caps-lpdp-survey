@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import LoadingSpinner from '../components/LoadingSpinner'
-import { supabase } from '../lib/supabase'
-import type { Database } from '../types/database'
+import LoadingSpinner from '../../components/LoadingSpinner'
+import { supabase } from '../../lib/supabase'
+import type { Database } from '../../types/database'
 import { toast } from 'sonner'
 
 const avatarBucket = 'avatars'
@@ -10,7 +10,7 @@ const provinceOptions = ['Jakarta', 'Jawa Barat', 'Jawa Tengah', 'Jawa Timur', '
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
-function Profile() {
+function ProfilePage() {
   const [fullName, setFullName] = useState('')
   const [nik, setNik] = useState('')
   const [dateOfBirth, setDateOfBirth] = useState('')
@@ -178,7 +178,7 @@ function Profile() {
                     </span>
                   )}
                 </div>
-                <label className="mt-5 block text-sm font-medium text-slate-700" htmlFor="avatar-file">
+                <label className="mt-5 block text-sm font-medium text-slate-700 cursor-pointer" htmlFor="avatar-file">
                   Unggah foto profil
                 </label>
                 <input
@@ -186,7 +186,7 @@ function Profile() {
                   type="file"
                   accept="image/*"
                   onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                 />
               </div>
             </div>
@@ -201,7 +201,7 @@ function Profile() {
                   type="text"
                   value={fullName}
                   onChange={(event) => setFullName(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                 />
               </div>
 
@@ -216,7 +216,7 @@ function Profile() {
                     value={nik}
                     onChange={(event) => setNik(event.target.value)}
                     placeholder="Contoh: 3174xxxxxxxxxxxx"
-                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                   />
                 </div>
 
@@ -229,7 +229,7 @@ function Profile() {
                     type="date"
                     value={dateOfBirth}
                     onChange={(event) => setDateOfBirth(event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                   />
                 </div>
 
@@ -241,7 +241,7 @@ function Profile() {
                     id="province"
                     value={province}
                     onChange={(event) => setProvince(event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                   >
                     <option value="">Pilih provinsi</option>
                     {provinceOptions.map((item) => (
@@ -262,7 +262,7 @@ function Profile() {
                     value={university}
                     onChange={(event) => setUniversity(event.target.value)}
                     placeholder="Contoh: Universitas Indonesia"
-                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                   />
                 </div>
               </div>
@@ -282,7 +282,7 @@ function Profile() {
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.28)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.28)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer"
               >
                 {saving ? 'Menyimpan...' : 'Simpan Profil'}
               </button>
@@ -294,4 +294,4 @@ function Profile() {
   )
 }
 
-export default Profile
+export default ProfilePage

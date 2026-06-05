@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import LoadingSpinner from '../components/LoadingSpinner'
-import { supabase } from '../lib/supabase'
-import type { Database } from '../types/database'
+import LoadingSpinner from '../../components/LoadingSpinner'
+import QuestionRenderer from '../../components/questions/QuestionRenderer'
+import { supabase } from '../../lib/supabase'
+import type { Database } from '../../types/database'
 import { toast } from 'sonner'
 
 type SurveyRow = Database['public']['Tables']['surveys']['Row']
@@ -47,14 +48,6 @@ function getBranchingLogic(question: QuestionRow) {
   }
 
   return logic as BranchingLogic
-}
-
-function getDropdownOptions(question: QuestionRow) {
-  if (!Array.isArray(question.options)) {
-    return []
-  }
-
-  return question.options.filter((option): option is string => typeof option === 'string')
 }
 
 function isSurveyDraft(value: unknown): value is SurveyDraft {
@@ -334,132 +327,20 @@ function SurveyPage() {
     const answer = answers[question.id] ?? emptyAnswerDraft
     const autoFilled = isAutoFilledQuestion(question.id)
 
-    if (question.question_type === 'short_text') {
-      return (
-        <input
-          type="text"
-          value={answer.textValue}
-          onChange={(event) => updateAnswer(question.id, { textValue: event.target.value })}
-          readOnly={autoFilled}
-          disabled={!isSurveyActive || autoFilled}
-          required={question.is_required}
-          aria-readonly={autoFilled}
-          placeholder="Tulis jawaban di sini"
-          className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 read-only:cursor-not-allowed read-only:bg-slate-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 disabled:opacity-80"
-        />
-      )
-    }
+    const isDual = question.question_type === 'dual_likert'
+    const val = isDual ? answer : answer.textValue
+    const onChange = isDual
+      ? (patch: Partial<AnswerDraft>) => updateAnswer(question.id, patch)
+      : (textVal: string) => updateAnswer(question.id, { textValue: textVal })
 
-    if (question.question_type === 'dropdown') {
-      const options = getDropdownOptions(question)
-
-      return (
-        <select
-          value={answer.textValue}
-          onChange={(event) => updateAnswer(question.id, { textValue: event.target.value })}
-          disabled={!isSurveyActive || autoFilled}
-          required={question.is_required}
-          className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 disabled:opacity-80"
-        >
-          <option value="">Pilih salah satu provinsi</option>
-          {options.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      )
-    }
-
-    if (question.question_type === 'dual_likert') {
-      const showReason = shouldShowReason(question, answer)
-      const likertValues = [1, 2, 3, 4, 5]
-
-      return (
-        <div className="mt-5 space-y-4">
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
-            <div className="grid grid-cols-[1fr_repeat(5,minmax(0,1fr))] gap-px bg-slate-200 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              <div className="bg-slate-50 px-4 py-3">Dimensi</div>
-              {likertValues.map((value) => (
-                <div key={value} className="bg-slate-50 px-2 py-3 text-center">
-                  {value}
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-[1fr_repeat(5,minmax(0,1fr))] gap-px bg-slate-200">
-              <div className="bg-white px-4 py-4 text-sm font-medium text-slate-900">
-                Kepentingan
-              </div>
-              {likertValues.map((value) => (
-                <label
-                  key={`importance-${value}`}
-                  className="flex items-center justify-center bg-white px-2 py-4"
-                >
-                  <input
-                    type="radio"
-                    name={`importance-${question.id}`}
-                    value={value}
-                    checked={answer.scoreImportance === String(value)}
-                    onChange={() =>
-                      updateAnswer(question.id, { scoreImportance: String(value) })
-                    }
-                    disabled={!isSurveyActive}
-                    required={question.is_required && value === 1}
-                    className="h-4 w-4 border-slate-300 text-[#F97316] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-shadow disabled:cursor-not-allowed opacity-80"
-                  />
-                </label>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-[1fr_repeat(5,minmax(0,1fr))] gap-px bg-slate-200">
-              <div className="bg-white px-4 py-4 text-sm font-medium text-slate-900">
-                Kepuasan
-              </div>
-              {likertValues.map((value) => (
-                <label
-                  key={`performance-${value}`}
-                  className="flex items-center justify-center bg-white px-2 py-4"
-                >
-                  <input
-                    type="radio"
-                    name={`performance-${question.id}`}
-                    value={value}
-                    checked={answer.scorePerformance === String(value)}
-                    onChange={() =>
-                      updateAnswer(question.id, { scorePerformance: String(value) })
-                    }
-                    disabled={!isSurveyActive}
-                    required={question.is_required && value === 1}
-                    className="h-4 w-4 border-slate-300 text-[#F97316] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-shadow disabled:cursor-not-allowed opacity-80"
-                  />
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {showReason ? (
-            <div>
-              <label className="text-sm font-medium text-slate-700" htmlFor={`reason-${question.id}`}>
-                Alasan
-              </label>
-              <textarea
-                id={`reason-${question.id}`}
-                value={answer.reason}
-                onChange={(event) => updateAnswer(question.id, { reason: event.target.value })}
-                disabled={!isSurveyActive}
-                required
-                rows={4}
-                placeholder="Jelaskan singkat alasan skor kepuasan di bawah 3"
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 disabled:opacity-80"
-              />
-            </div>
-          ) : null}
-        </div>
-      )
-    }
-
-    return null
+    return (
+      <QuestionRenderer
+        question={question}
+        value={val}
+        onChange={onChange}
+        preview={!isSurveyActive || autoFilled}
+      />
+    )
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -665,13 +546,13 @@ function SurveyPage() {
             <button
               type="button"
               onClick={handleBackToHome}
-              className="inline-flex items-center gap-2 rounded-full bg-transparent px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-100 hover:text-slate-900"
+              className="inline-flex items-center gap-2 rounded-full bg-transparent px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-100 hover:text-slate-900 cursor-pointer"
             >
               <span aria-hidden="true">←</span>
               Kembali ke Beranda
             </button>
 
-            <h1 className="text-3xl font-semibold tracking-tight tracking-[-0.04em] text-[#003366] sm:text-4xl">
+            <h1 className="text-3xl font-semibold tracking-tight tracking-[-0.04em] text-[#003366] sm:text-4xl mt-3">
               {survey?.title}
             </h1>
 
@@ -726,25 +607,25 @@ function SurveyPage() {
 
             <section className="mt-8 space-y-6 rounded-[2rem] border border-gray-100 bg-slate-50 p-5 sm:p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
               {currentQuestion ? (
-              <article className="relative transform-gpu rounded-[1.5rem] border border-gray-100 bg-white p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg">
-                    {isAutoFilledQuestion(currentQuestion.id) ? (
-                      <div className="absolute right-5 top-5 flex flex-col items-end gap-2">
-                        <span className="rounded-full bg-[#003366]/10 px-3 py-1 text-[11px] font-semibold text-[#003366]">
-                          ✓ Terisi otomatis dari profil Anda
-                        </span>
-                        <Link
-                          to="/profile"
-                          className="text-[11px] font-semibold text-[#003366] underline decoration-[#F97316] decoration-2 underline-offset-4 transition hover:text-[#F97316]"
-                        >
-                          👉 Ada data keliru? Perbarui profil Anda di sini
-                        </Link>
-                      </div>
-                    ) : null}
+                <article className="relative transform-gpu rounded-[1.5rem] border border-gray-100 bg-white p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg">
+                  {isAutoFilledQuestion(currentQuestion.id) ? (
+                    <div className="absolute right-5 top-5 flex flex-col items-end gap-2">
+                      <span className="rounded-full bg-[#003366]/10 px-3 py-1 text-[11px] font-semibold text-[#003366]">
+                        ✓ Terisi otomatis dari profil Anda
+                      </span>
+                      <Link
+                        to="/profile"
+                        className="text-[11px] font-semibold text-[#003366] underline decoration-[#F97316] decoration-2 underline-offset-4 transition hover:text-[#F97316]"
+                      >
+                        👉 Ada data keliru? Perbarui profil Anda di sini
+                      </Link>
+                    </div>
+                  ) : null}
                   <div className="flex items-start gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#003366] text-xs font-semibold text-white">
                       {currentStep + 1}
                     </div>
-                      <div className="min-w-0 flex-1 pr-40">
+                    <div className="min-w-0 flex-1 pr-40">
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="text-base font-semibold tracking-tight text-slate-900">
                           {currentQuestion.question_text}
@@ -772,11 +653,11 @@ function SurveyPage() {
                     <button
                       type="button"
                       onClick={() => {
-                          hasDraftInteractionRef.current = true
+                        hasDraftInteractionRef.current = true
                         setCurrentStep((step) => Math.max(step - 1, 0))
                       }}
                       disabled={submitting}
-                      className="inline-flex items-center justify-center rounded-full bg-transparent px-6 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex items-center justify-center rounded-full bg-transparent px-6 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                     >
                       Kembali
                     </button>
@@ -787,7 +668,7 @@ function SurveyPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.35)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                    className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.35)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer"
                   >
                     {submitting ? 'Memproses...' : 'Selanjutnya'}
                   </button>
@@ -795,7 +676,7 @@ function SurveyPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.35)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                    className="inline-flex items-center justify-center rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(249,115,22,0.35)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer"
                   >
                     {submitting ? 'Mengirim...' : 'Kirim Survei'}
                   </button>
