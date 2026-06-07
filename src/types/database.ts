@@ -9,6 +9,7 @@ export type Json =
 export interface SurveyRow {
   id: string;
   title: string;
+  guideline: string | null;
   is_active: boolean;
   is_archived: boolean;
   created_at: string;
@@ -34,6 +35,7 @@ export interface QuestionRow {
   /** Referensi ke section. Null untuk pertanyaan lama yang belum dimigrasikan. */
   section_id: string | null;
   question_text: string;
+  description: string | null;
   question_type: string;
   options: Json | null;
   is_required: boolean;
@@ -78,12 +80,14 @@ export interface Database {
         Insert: {
           id?: string;
           title: string;
+          guideline?: string | null;
           is_active?: boolean;
           is_archived?: boolean;
           created_at?: string;
         };
         Update: {
           title?: string;
+          guideline?: string | null;
           is_active?: boolean;
           is_archived?: boolean;
           created_at?: string;
@@ -115,6 +119,7 @@ export interface Database {
           survey_id: string;
           section_id?: string | null;
           question_text: string;
+          description?: string | null;
           question_type: string;
           options?: Json | null;
           is_required?: boolean;
@@ -125,6 +130,7 @@ export interface Database {
           survey_id?: string;
           section_id?: string | null;
           question_text?: string;
+          description?: string | null;
           question_type?: string;
           options?: Json | null;
           is_required?: boolean;

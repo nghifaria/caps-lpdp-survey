@@ -11,6 +11,7 @@ import TrueFalseQuestion from './respondent/TrueFalseQuestion'
 interface QuestionData {
   id: string
   question_text: string
+  description?: string | null
   question_type: string
   is_required?: boolean
   options?: any

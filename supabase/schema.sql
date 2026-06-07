@@ -3,6 +3,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.surveys (
   id uuid primary key default gen_random_uuid(),
   title text not null,
+  guideline text,
   is_active boolean not null default true,
   created_at timestamptz not null default now()
 );
@@ -11,6 +12,7 @@ create table if not exists public.questions (
   id uuid primary key default gen_random_uuid(),
   survey_id uuid not null references public.surveys (id) on delete cascade,
   question_text text not null,
+  description text,
   question_type text not null,
   options jsonb,
   is_required boolean not null default false,

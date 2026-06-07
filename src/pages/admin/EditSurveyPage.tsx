@@ -91,6 +91,7 @@ export default function EditSurveyPage() {
   // State untuk edit judul survei
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState('')
+  const [guidelineDraft, setGuidelineDraft] = useState('')
 
   // State untuk tambah section baru
   const [isAddingSectionOpen, setIsAddingSectionOpen] = useState(false)
@@ -106,6 +107,7 @@ export default function EditSurveyPage() {
   type AddQuestionState = {
     sectionId: string
     text: string
+    description: string
     type: QuestionType
     required: boolean
     optionsText: string
@@ -117,6 +119,7 @@ export default function EditSurveyPage() {
   type EditQuestionState = {
     questionId: string
     text: string
+    description: string
     type: QuestionType
     required: boolean
     optionsText: string
@@ -146,7 +149,7 @@ export default function EditSurveyPage() {
     try {
       const { data: surveyData, error: surveyError } = await supabase
         .from('surveys')
-        .select('id, title, is_active, created_at')
+        .select('id, title, guideline, is_active, created_at')
         .eq('id', surveyId)
         .maybeSingle()
 
@@ -157,6 +160,7 @@ export default function EditSurveyPage() {
 
       setSurvey(surveyRow)
       setTitleDraft(surveyRow.title)
+      setGuidelineDraft(surveyRow.guideline ?? '')
 
       const { data: sectionsData, error: sectionsError } = await supabase
         .from('sections')
@@ -171,7 +175,7 @@ export default function EditSurveyPage() {
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions')
         .select(
-          'id, survey_id, section_id, question_text, question_type, options, is_required, branching_logic, order_index',
+          'id, survey_id, section_id, question_text, description, question_type, options, is_required, branching_logic, order_index',
         )
         .eq('survey_id', surveyId)
         .order('order_index', { ascending: true })
@@ -231,6 +235,31 @@ export default function EditSurveyPage() {
       toast.error(updateError.message)
     } else {
       setSurvey((prev) => (prev ? { ...prev, title: newTitle } : prev))
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus('idle'), 2000)
+    }
+  }
+
+  // ── Autosave Guideline Survei ──────────────────────────────────────────────
+  const debouncedGuideline = useDebounce(guidelineDraft, 1000)
+
+  useEffect(() => {
+    if (survey && debouncedGuideline !== undefined && debouncedGuideline !== (survey.guideline ?? '')) {
+      void saveGuidelineAuto(debouncedGuideline)
+    }
+  }, [debouncedGuideline])
+
+  async function saveGuidelineAuto(newGuideline: string) {
+    setSaveStatus('saving')
+    const { error: updateError } = await (supabase.from('surveys') as any)
+      .update({ guideline: newGuideline.trim() || null })
+      .eq('id', survey!.id)
+
+    if (updateError) {
+      setSaveStatus('error')
+      toast.error(updateError.message)
+    } else {
+      setSurvey((prev) => (prev ? { ...prev, guideline: newGuideline.trim() || null } : prev))
       setSaveStatus('saved')
       setTimeout(() => setSaveStatus('idle'), 2000)
     }
@@ -351,6 +380,7 @@ export default function EditSurveyPage() {
     setAddingQuestion({
       sectionId,
       text: '',
+      description: '',
       type: 'dual_likert',
       required: true,
       optionsText: '',
@@ -361,8 +391,9 @@ export default function EditSurveyPage() {
     e.preventDefault()
     if (!addingQuestion || !surveyId) return
 
-    const { sectionId, text, type, required, optionsText } = addingQuestion
+    const { sectionId, text, description, type, required, optionsText } = addingQuestion
     const trimmedText = text.trim()
+    const trimmedDescription = description.trim() || null
 
     if (!trimmedText) {
       toast.error('Teks pertanyaan wajib diisi.')
@@ -398,6 +429,7 @@ export default function EditSurveyPage() {
         survey_id: surveyId,
         section_id: sectionId === '__orphan__' ? null : sectionId,
         question_text: trimmedText,
+        description: trimmedDescription,
         question_type: type,
         is_required: required,
         options: options,
@@ -421,6 +453,7 @@ export default function EditSurveyPage() {
     setEditingQuestion({
       questionId: question.id,
       text: question.question_text,
+      description: question.description ?? '',
       type: question.question_type as QuestionType,
       required: question.is_required,
       optionsText: optionsToString(question.options),
@@ -475,6 +508,7 @@ export default function EditSurveyPage() {
         
         if (
           original.question_text !== debouncedEditingQuestion.text ||
+          original.description !== (debouncedEditingQuestion.description || null) ||
           original.question_type !== debouncedEditingQuestion.type ||
           original.is_required !== debouncedEditingQuestion.required ||
           (isChoiceType && oldOptionsText !== debouncedEditingQuestion.optionsText)
@@ -489,6 +523,7 @@ export default function EditSurveyPage() {
     const trimmedText = editedQ.text.trim()
     if (!trimmedText) return
 
+    const trimmedDescription = editedQ.description.trim() || null
     const isChoiceType = CHOICE_TYPES.includes(editedQ.type)
     const options = isChoiceType ? stringToOptions(editedQ.optionsText) : null
     
@@ -510,6 +545,7 @@ export default function EditSurveyPage() {
     const { error: updateError } = await (supabase.from('questions') as any)
       .update({
         question_text: trimmedText,
+        description: trimmedDescription,
         question_type: editedQ.type,
         is_required: editedQ.required,
         options: options,
@@ -529,6 +565,7 @@ export default function EditSurveyPage() {
               ? {
                   ...q,
                   question_text: trimmedText,
+                  description: trimmedDescription,
                   question_type: editedQ.type,
                   is_required: editedQ.required,
                   options: options,
@@ -691,6 +728,21 @@ export default function EditSurveyPage() {
               </button>
             </div>
           )}
+
+          {/* Petunjuk Pengisian Survei (Guideline) — Textarea */}
+          <div className="mt-4 max-w-lg">
+            <label className="block text-xs font-semibold uppercase tracking-[0.12em] text-ash/60" htmlFor="guideline-editor">
+              Petunjuk Pengisian Survei (Opsional)
+            </label>
+            <textarea
+              id="guideline-editor"
+              value={guidelineDraft}
+              onChange={(e) => setGuidelineDraft(e.target.value)}
+              placeholder="Masukkan panduan/petunjuk pengisian kuesioner ini..."
+              rows={3}
+              className="mt-2 w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-4 focus:ring-oren/10 resize-y"
+            />
+          </div>
         </div>
 
         <div className="flex shrink-0 gap-3">
@@ -856,12 +908,21 @@ export default function EditSurveyPage() {
                         {isEditingThis ? (
                           <form onSubmit={(e) => void handleFinishEditQuestion(e)} className="space-y-4">
                             <div className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr_0.5fr]">
-                              <input
-                                type="text"
-                                value={editingQuestion.text}
-                                onChange={(e) => setEditingQuestion((prev) => prev ? { ...prev, text: e.target.value } : prev)}
-                                className="w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10"
-                              />
+                              <div className="space-y-2">
+                                <input
+                                  type="text"
+                                  value={editingQuestion.text}
+                                  onChange={(e) => setEditingQuestion((prev) => prev ? { ...prev, text: e.target.value } : prev)}
+                                  className="w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10"
+                                />
+                                <input
+                                  type="text"
+                                  value={editingQuestion.description}
+                                  onChange={(e) => setEditingQuestion((prev) => prev ? { ...prev, description: e.target.value } : prev)}
+                                  placeholder="Deskripsi pertanyaan (opsional)..."
+                                  className="w-full rounded-xl border border-light-grey bg-white px-4 py-2 text-xs text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10"
+                                />
+                              </div>
                               <select
                                 value={editingQuestion.type}
                                 onChange={(e) => void handleTypeChange(question.id, e.target.value as QuestionType)}
@@ -915,6 +976,11 @@ export default function EditSurveyPage() {
                               <p className="text-sm font-semibold text-ash leading-snug">
                                 {question.question_text}
                               </p>
+                              {question.description && (
+                                <p className="mt-1 text-xs text-ash/60 leading-normal">
+                                  {question.description}
+                                </p>
+                              )}
                               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                                 <span className="rounded-xl bg-butter/45 px-2.5 py-0.5 text-xs font-semibold text-ash/80">
                                   {formatQuestionType(question.question_type)}
@@ -964,18 +1030,31 @@ export default function EditSurveyPage() {
                     {addingQuestion?.sectionId === section.id ? (
                       <form onSubmit={(e) => void handleCreateQuestion(e)} className="space-y-3">
                         <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
-                          <input
-                            type="text"
-                            value={addingQuestion.text}
-                            onChange={(e) =>
-                              setAddingQuestion((prev) =>
-                                prev ? { ...prev, text: e.target.value } : prev,
-                              )
-                            }
-                            placeholder="Teks pertanyaan baru..."
-                            className="w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10 h-[48px]"
-                            autoFocus
-                          />
+                          <div className="space-y-2 flex-1">
+                            <input
+                              type="text"
+                              value={addingQuestion.text}
+                              onChange={(e) =>
+                                setAddingQuestion((prev) =>
+                                  prev ? { ...prev, text: e.target.value } : prev,
+                                )
+                              }
+                              placeholder="Teks pertanyaan baru..."
+                              className="w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10 h-[48px]"
+                              autoFocus
+                            />
+                            <input
+                              type="text"
+                              value={addingQuestion.description}
+                              onChange={(e) =>
+                                setAddingQuestion((prev) =>
+                                  prev ? { ...prev, description: e.target.value } : prev,
+                                )
+                              }
+                              placeholder="Deskripsi pertanyaan (opsional)..."
+                              className="w-full rounded-xl border border-light-grey bg-white px-4 py-2 text-xs text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10"
+                            />
+                          </div>
                           <label className="block">
                             <select
                               value={addingQuestion.type}

@@ -522,7 +522,7 @@ function SurveyPage() {
 
       const surveyResult = await supabase
         .from('surveys')
-        .select('id, title, is_active, created_at')
+        .select('id, title, guideline, is_active, created_at')
         .eq('id', surveyParam)
         .maybeSingle()
 
@@ -554,7 +554,7 @@ function SurveyPage() {
 
       const questionsResult = await supabase
         .from('questions')
-        .select('id, survey_id, section_id, question_text, question_type, options, is_required, branching_logic, order_index')
+        .select('id, survey_id, section_id, question_text, description, question_type, options, is_required, branching_logic, order_index')
         .eq('survey_id', resolvedSurveyId)
         .order('order_index', { ascending: true })
 
@@ -673,6 +673,20 @@ function SurveyPage() {
               Isi pertanyaan berikut untuk membantu kami membaca pengalaman layanan LPDP secara lebih akurat.
             </p>
 
+            {survey?.guideline && (
+              <div className="mt-6 rounded-2xl border border-sky-100 bg-sky-50/50 p-5 text-sm text-ash/90 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.02)]">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-700 text-xs font-bold mt-0.5">
+                    i
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-navy mb-1">Petunjuk Pengisian Survei</p>
+                    <p className="leading-relaxed whitespace-pre-wrap text-ash/80">{survey.guideline}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {totalSteps > 0 ? (
               <div className="mt-6 rounded-2xl border border-light-grey bg-white p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)]">
                 <div className="mb-3 flex items-center justify-between gap-3 text-xs font-medium uppercase tracking-[0.18em] text-ash/50">
@@ -760,6 +774,11 @@ function SurveyPage() {
                                   </span>
                                 ) : null}
                               </div>
+                              {question.description && (
+                                <p className="mt-1 text-xs text-ash/60 leading-normal">
+                                  {question.description}
+                                </p>
+                              )}
                               <div className="mb-4" />
                               {renderQuestionInput(question)}
                             </div>
