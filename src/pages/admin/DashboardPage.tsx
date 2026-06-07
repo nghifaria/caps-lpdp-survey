@@ -696,9 +696,9 @@ function DashboardPage() {
 
     setCreatingSurvey(true)
 
-    const { error: insertError } = await supabase
-      .from('surveys')
-      .insert([{ title, is_active: true } as never])
+    const { error: insertError } = await (supabase.from('surveys') as any).insert([
+      { title, is_active: true },
+    ])
 
     if (insertError) {
       toast.error(insertError.message)
@@ -723,7 +723,9 @@ function DashboardPage() {
     setSurveyIdToArchive(null)
     setArchivingSurveyId(surveyId)
 
-    const { error: archiveError } = await supabase.from('surveys').update({ is_archived: true }).eq('id', surveyId)
+    const { error: archiveError } = await (supabase.from('surveys') as any)
+      .update({ is_archived: true })
+      .eq('id', surveyId)
 
     if (archiveError) {
       toast.error(archiveError.message)
@@ -749,7 +751,9 @@ function DashboardPage() {
 
   async function handleRestoreSurvey(surveyId: string) {
     setUpdatingStatus(true)
-    const { error: restoreError } = await supabase.from('surveys').update({ is_archived: false }).eq('id', surveyId)
+    const { error: restoreError } = await (supabase.from('surveys') as any)
+      .update({ is_archived: false })
+      .eq('id', surveyId)
     if (restoreError) {
       toast.error(restoreError.message)
     } else {
@@ -761,7 +765,7 @@ function DashboardPage() {
 
   async function handleDuplicateSurvey(surveyId: string) {
     setDuplicatingSurveyId(surveyId)
-    const { data, error } = await supabase.rpc('duplicate_survey', { source_survey_id: surveyId })
+    const { error } = await (supabase as any).rpc('duplicate_survey', { source_survey_id: surveyId })
     if (error) {
       toast.error(error.message)
     } else {

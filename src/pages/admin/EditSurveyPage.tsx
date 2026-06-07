@@ -15,7 +15,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 
 
 import { useDebounce } from '../../hooks/useDebounce'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
   ChevronDown,
@@ -82,7 +82,6 @@ function stringToOptions(raw: string): string[] {
 // ─── Komponen utama ───────────────────────────────────────────────────────────
 export default function EditSurveyPage() {
   const { id: surveyId } = useParams<{ id: string }>()
-  const navigate = useNavigate()
 
   const [survey, setSurvey] = useState<SurveyRow | null>(null)
   const [sections, setSections] = useState<SectionWithQuestions[]>([])
@@ -154,8 +153,10 @@ export default function EditSurveyPage() {
       if (surveyError) throw new Error(surveyError.message)
       if (!surveyData) throw new Error('Survei tidak ditemukan.')
 
-      setSurvey(surveyData as SurveyRow)
-      setTitleDraft(surveyData.title)
+      const surveyRow = surveyData as SurveyRow
+
+      setSurvey(surveyRow)
+      setTitleDraft(surveyRow.title)
 
       const { data: sectionsData, error: sectionsError } = await supabase
         .from('sections')
@@ -221,8 +222,7 @@ export default function EditSurveyPage() {
 
   async function saveTitleAuto(newTitle: string) {
     setSaveStatus('saving')
-    const { error: updateError } = await supabase
-      .from('surveys')
+    const { error: updateError } = await (supabase.from('surveys') as any)
       .update({ title: newTitle })
       .eq('id', survey!.id)
 
@@ -245,9 +245,9 @@ export default function EditSurveyPage() {
     setAddingSection(true)
     const nextOrder = sections.filter((s) => s.id !== '__orphan__').length
 
-    const { error: insertError } = await supabase
-      .from('sections')
-      .insert([{ survey_id: surveyId, title, order_index: nextOrder } as never])
+    const { error: insertError } = await (supabase.from('sections') as any).insert([
+      { survey_id: surveyId, title, order_index: nextOrder },
+    ])
 
     if (insertError) {
       toast.error(insertError.message)
@@ -279,8 +279,7 @@ export default function EditSurveyPage() {
 
   async function saveSectionAuto(sectionId: string, newTitle: string) {
     setSaveStatus('saving')
-    const { error: updateError } = await supabase
-      .from('sections')
+    const { error: updateError } = await (supabase.from('sections') as any)
       .update({ title: newTitle })
       .eq('id', sectionId)
 
@@ -333,8 +332,8 @@ export default function EditSurveyPage() {
     const target = realSections[targetIdx]
 
     const updates = [
-      supabase.from('sections').update({ order_index: target.order_index }).eq('id', current.id),
-      supabase.from('sections').update({ order_index: current.order_index }).eq('id', target.id),
+      (supabase.from('sections') as any).update({ order_index: target.order_index }).eq('id', current.id),
+      (supabase.from('sections') as any).update({ order_index: current.order_index }).eq('id', target.id),
     ]
 
     const results = await Promise.all(updates)
@@ -394,7 +393,7 @@ export default function EditSurveyPage() {
         : null
 
     setCreatingQuestion(true)
-    const { error: insertError } = await supabase.from('questions').insert([
+    const { error: insertError } = await (supabase.from('questions') as any).insert([
       {
         survey_id: surveyId,
         section_id: sectionId === '__orphan__' ? null : sectionId,
@@ -404,7 +403,7 @@ export default function EditSurveyPage() {
         options: options,
         branching_logic: branchingLogic,
         order_index: nextOrder,
-      } as never,
+      },
     ])
 
     if (insertError) {
@@ -508,8 +507,7 @@ export default function EditSurveyPage() {
         : null
 
     setSaveStatus('saving')
-    const { error: updateError } = await supabase
-      .from('questions')
+    const { error: updateError } = await (supabase.from('questions') as any)
       .update({
         question_text: trimmedText,
         question_type: editedQ.type,
@@ -589,8 +587,8 @@ export default function EditSurveyPage() {
     const target = questions[targetIdx]
 
     const updates = [
-      supabase.from('questions').update({ order_index: target.order_index }).eq('id', current.id),
-      supabase.from('questions').update({ order_index: current.order_index }).eq('id', target.id),
+      (supabase.from('questions') as any).update({ order_index: target.order_index }).eq('id', current.id),
+      (supabase.from('questions') as any).update({ order_index: current.order_index }).eq('id', target.id),
     ]
 
     const results = await Promise.all(updates)
