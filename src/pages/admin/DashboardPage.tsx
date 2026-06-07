@@ -294,10 +294,12 @@ function DashboardPage() {
         setSurveys(surveysData as SurveyRow[])
       }
 
+      const surveyRows = (surveysData ?? []) as SurveyRow[]
+
       let resolvedSurvey: SurveyRow | null = null
-      if (surveysData && surveysData.length > 0) {
-        const seed = surveysData.find((s) => s.title === 'Survei Kepuasan Layanan LPDP 2026')
-        resolvedSurvey = (seed || surveysData[0]) as SurveyRow
+      if (surveyRows.length > 0) {
+        const seed = surveyRows.find((s: SurveyRow) => s.title === 'Survei Kepuasan Layanan LPDP 2026')
+        resolvedSurvey = seed || surveyRows[0]
       }
 
       if (!resolvedSurvey) {
@@ -947,7 +949,7 @@ function DashboardPage() {
                   onChange={(e) => void handleSurveyChange(e.target.value)}
                   className="rounded-xl border border-light-grey bg-white px-4 py-2.5 text-sm font-semibold text-ash outline-none transition focus:border-oren focus:ring-4 focus:ring-oren/10 cursor-pointer shadow-sm hover:bg-slate-50"
                 >
-                  {surveys.map((s) => (
+                  {surveys.map((s: SurveyRow) => (
                     <option key={s.id} value={s.id}>
                       {s.title}
                     </option>
