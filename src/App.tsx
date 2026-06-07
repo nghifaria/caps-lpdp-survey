@@ -19,6 +19,7 @@ const ProfilePage = lazy(() => import('./pages/respondent/ProfilePage'))
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
 const SignUpPage = lazy(() => import('./pages/auth/SignUpPage'))
 const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'))
+const EditSurveyPage = lazy(() => import('./pages/admin/EditSurveyPage'))
 
 type Session = Database['public'] extends never ? never : Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session']
 
@@ -83,6 +84,7 @@ function App() {
           >
             <Route path="/admin" element={<DashboardPage />} />
             <Route path="/admin/surveys" element={<DashboardPage />} />
+            <Route path="/admin/surveys/:id/edit" element={<EditSurveyPage />} />
             <Route path="/admin/critical-feedback" element={<DashboardPage />} />
             <Route path="/admin/respondents" element={<DashboardPage />} />
           </Route>

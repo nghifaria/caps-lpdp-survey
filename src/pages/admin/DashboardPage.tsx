@@ -15,11 +15,11 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { ArchiveX, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { ArchiveX, ExternalLink, Plus, Search, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import type { Database } from '../../types/database'
+import type { Database, SurveyWithCount } from '../../types/database'
 import { toast } from 'sonner'
 
 type SurveyRow = Database['public']['Tables']['surveys']['Row']
@@ -94,16 +94,6 @@ type AdminUserRow = {
   updated_at: string
 }
 
-type SurveyQuestionFormType =
-  | 'dual_likert'
-  | 'text'
-  | 'short_text'
-  | 'long_text'
-  | 'checkbox'
-  | 'dropdown'
-  | 'multiple_choice'
-  | 'true_false'
-
 const provinceOptions = ['Jakarta', 'Jawa Barat', 'Jawa Tengah', 'Jawa Timur']
 
 type AdminRpcClient = {
@@ -127,14 +117,15 @@ function DashboardPage() {
   const location = useLocation()
   
   const [survey, setSurvey] = useState<SurveyRow | null>(null)
-  const [surveys, setSurveys] = useState<SurveyRow[]>([])
-  const [selectedSurveyId, setSelectedSurveyId] = useState<string | null>(null)
+  // Gunakan SurveyWithCount agar question_count sudah ter-fetch sekaligus (tanpa N+1)
+  const [surveys, setSurveys] = useState<SurveyWithCount[]>([])
   const [responses, setResponses] = useState<ResponseWithAnswers[]>([])
   const [selectedProvince, setSelectedProvince] = useState('all')
   const [activeTab, setActiveTab] = useState<'analytics' | 'critical-feedback' | 'users' | 'manage-surveys'>('analytics')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeStatusFilter, setActiveStatusFilter] = useState<'active' | 'archived' | 'draft'>('active')
+  // Tab status: 'all' | 'active' | 'inactive'
+  const [activeStatusFilter, setActiveStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [surveyIdToDelete, setSurveyIdToDelete] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [updatingStatus, setUpdatingStatus] = useState(false)
@@ -150,15 +141,10 @@ function DashboardPage() {
   const [creatingSurvey, setCreatingSurvey] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [deletingSurveyId, setDeletingSurveyId] = useState<string | null>(null)
-  const [questions, setQuestions] = useState<QuestionRow[]>([])
-  const [questionsLoading, setQuestionsLoading] = useState(false)
-  const [questionsError, setQuestionsError] = useState<string | null>(null)
-  const [newQuestionText, setNewQuestionText] = useState('')
-  const [newQuestionType, setNewQuestionType] = useState<SurveyQuestionFormType>('dual_likert')
-  const [newQuestionRequired, setNewQuestionRequired] = useState(true)
-  const [creatingQuestion, setCreatingQuestion] = useState(false)
-  const [deletingQuestionId, setDeletingQuestionId] = useState<string | null>(null)
-  const [newQuestionOptionsText, setNewQuestionOptionsText] = useState('')
+  const [togglingStatusId, setTogglingStatusId] = useState<string | null>(null)
+  // Pagination: 20 per halaman default
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
 
   // Map sub-routes to active tabs
   useEffect(() => {
@@ -173,42 +159,26 @@ function DashboardPage() {
     }
   }, [location.pathname])
 
+  /**
+   * loadSurveys: Gunakan view `survey_with_question_count` agar jumlah
+   * pertanyaan dihitung di sisi DB (satu query, eliminasi N+1 query).
+   */
   async function loadSurveys() {
     setSurveysLoading(true)
     setSurveysError(null)
-    const { data, error: surveyListError } = await supabase
-      .from('surveys')
-      .select('id, title, is_active, created_at')
+    const { data, error: surveyListError } = await (supabase as any)
+      .from('survey_with_question_count')
+      .select('id, title, is_active, created_at, question_count')
       .order('created_at', { ascending: false })
 
     if (surveyListError) {
       setSurveysError(surveyListError.message)
       setSurveys([])
     } else {
-      setSurveys((data ?? []) as SurveyRow[])
+      setSurveys((data ?? []) as SurveyWithCount[])
     }
 
     setSurveysLoading(false)
-  }
-
-  async function loadQuestions(surveyId: string) {
-    setQuestionsLoading(true)
-    setQuestionsError(null)
-
-    const { data, error: questionListError } = await supabase
-      .from('questions')
-      .select('id, survey_id, question_text, question_type, options, is_required, branching_logic')
-      .eq('survey_id', surveyId)
-      .order('question_text', { ascending: true })
-
-    if (questionListError) {
-      setQuestionsError(questionListError.message)
-      setQuestions([])
-    } else {
-      setQuestions((data ?? []) as QuestionRow[])
-    }
-
-    setQuestionsLoading(false)
   }
 
   useEffect(() => {
@@ -280,10 +250,10 @@ function DashboardPage() {
 
       void loadUsers()
 
-      // Load surveys list directly inside loadDashboard for robust selection
-      const { data: surveysData, error: surveysListError } = await supabase
-        .from('surveys')
-        .select('id, title, is_active, created_at')
+      // Load surveys list via view untuk efisiensi (sekalian dapat question_count)
+      const { data: surveysData, error: surveysListError } = await (supabase as any)
+        .from('survey_with_question_count')
+        .select('id, title, is_active, created_at, question_count')
         .order('created_at', { ascending: false })
 
       if (surveysListError) {
@@ -291,7 +261,7 @@ function DashboardPage() {
           setSurveysError(surveysListError.message)
         }
       } else if (surveysData && !cancelled) {
-        setSurveys(surveysData as SurveyRow[])
+        setSurveys(surveysData as SurveyWithCount[])
       }
 
       const surveyRows = (surveysData ?? []) as SurveyRow[]
@@ -746,128 +716,9 @@ function DashboardPage() {
       return
     }
 
-    if (survey?.id === surveyId) {
-      setSurvey(null)
-      setResponses([])
-    }
-
-    if (selectedSurveyId === surveyId) {
-      setSelectedSurveyId(null)
-      setQuestions([])
-      setQuestionsError(null)
-    }
-
     await loadSurveys()
     toast.success('Survei berhasil dihapus.')
     setDeletingSurveyId(null)
-  }
-
-  async function handleSelectSurveyQuestions(surveyId: string) {
-    setSelectedSurveyId(surveyId)
-    setNewQuestionText('')
-    setNewQuestionType('dual_likert')
-    setNewQuestionRequired(true)
-    await loadQuestions(surveyId)
-  }
-
-  async function handleCreateQuestion(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
-    if (!selectedSurveyId) {
-      toast.error('Pilih survei terlebih dahulu.')
-      return
-    }
-
-    const questionText = newQuestionText.trim()
-
-    if (!questionText) {
-      toast.error('Teks pertanyaan wajib diisi.')
-      return
-    }
-
-    setCreatingQuestion(true)
-
-    const branchingLogic =
-      newQuestionType === 'dual_likert'
-        ? {
-            show_reason_if: {
-              field: 'score_performance',
-              operator: '<',
-              value: 3,
-              target: 'reason',
-            },
-          }
-        : null
-
-    const isChoiceType = ['checkbox', 'dropdown', 'multiple_choice'].includes(newQuestionType)
-    const options = isChoiceType
-      ? newQuestionOptionsText.split(',').map((s) => s.trim()).filter(Boolean)
-      : null
-
-    if (isChoiceType && (!options || options.length === 0)) {
-      toast.error('Wajib mengisi minimal satu pilihan untuk tipe data ini.')
-      setCreatingQuestion(false)
-      return
-    }
-
-    const { error: insertError } = await supabase
-      .from('questions')
-      .insert([
-        {
-          survey_id: selectedSurveyId,
-          question_text: questionText,
-          question_type: newQuestionType,
-          is_required: newQuestionRequired,
-          options: options,
-          branching_logic: branchingLogic,
-        } as never,
-      ])
-
-    if (insertError) {
-      toast.error(insertError.message)
-      setCreatingQuestion(false)
-      return
-    }
-
-    setNewQuestionText('')
-    setNewQuestionType('dual_likert')
-    setNewQuestionRequired(true)
-    setNewQuestionOptionsText('')
-    await loadQuestions(selectedSurveyId)
-    toast.success('Pertanyaan baru berhasil ditambahkan.')
-    setCreatingQuestion(false)
-  }
-
-  async function handleDeleteQuestion(questionId: string) {
-    if (!selectedSurveyId) {
-      return
-    }
-
-    const targetQuestion = questions.find((question) => question.id === questionId)
-
-    if (!targetQuestion) {
-      return
-    }
-
-    const confirmed = window.confirm(`Hapus pertanyaan "${targetQuestion.question_text}"?`)
-
-    if (!confirmed) {
-      return
-    }
-
-    setDeletingQuestionId(questionId)
-
-    const { error: deleteError } = await supabase.from('questions').delete().eq('id', questionId)
-
-    if (deleteError) {
-      toast.error(deleteError.message)
-      setDeletingQuestionId(null)
-      return
-    }
-
-    await loadQuestions(selectedSurveyId)
-    toast.success('Pertanyaan berhasil dihapus.')
-    setDeletingQuestionId(null)
   }
 
   function exportCsv() {
@@ -906,22 +757,48 @@ function DashboardPage() {
       year: 'numeric',
     })
 
+  // Toggle status aktif/nonaktif untuk satu survei di halaman manage-surveys
+  async function handleToggleSurveyStatus(surveyItem: SurveyWithCount) {
+    setTogglingStatusId(surveyItem.id)
+    const nextStatus = !surveyItem.is_active
+
+    const { error: updateError } = await adminRpc.rpc('set_survey_status', {
+      survey_id: surveyItem.id,
+      next_status: nextStatus,
+    })
+
+    if (updateError) {
+      toast.error(updateError.message ?? 'Gagal memperbarui status survei.')
+    } else {
+      setSurveys((prev) =>
+        prev.map((s) => (s.id === surveyItem.id ? { ...s, is_active: nextStatus } : s)),
+      )
+      toast.success(nextStatus ? 'Survei berhasil diaktifkan.' : 'Survei berhasil dinonaktifkan.')
+    }
+    setTogglingStatusId(null)
+  }
+
   const visibleSurveys = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
-
     return surveys.filter((surveyItem) => {
       const matchesStatus =
-        activeStatusFilter === 'active'
-          ? surveyItem.is_active
-          : activeStatusFilter === 'draft'
-            ? !surveyItem.is_active
-            : false
+        activeStatusFilter === 'all'
+          ? true
+          : activeStatusFilter === 'active'
+            ? surveyItem.is_active
+            : !surveyItem.is_active
 
       const matchesSearch = !query || surveyItem.title.toLowerCase().includes(query)
-
-      return activeStatusFilter === 'archived' ? false : matchesStatus && matchesSearch
+      return matchesStatus && matchesSearch
     })
   }, [activeStatusFilter, searchQuery, surveys])
+
+  // Pagination: potong hasil setelah filter
+  const totalPages = Math.ceil(visibleSurveys.length / pageSize)
+  const paginatedSurveys = visibleSurveys.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  )
 
   return (
     <div className="space-y-8 print:p-0">
@@ -1254,13 +1131,13 @@ function DashboardPage() {
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.22em] text-oren">
-                    Feedback List
+                    Daftar Umpan Balik
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ash">
-                    Critical Feedback
+                    Umpan Balik Kritis
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-ash/80">
-                    Keluhan dengan skor performance di bawah 3 dan alasan yang diisi, sudah mengikuti filter provinsi aktif.
+                    Keluhan dengan skor performa di bawah 3 dan alasan yang diisi, sudah mengikuti filter provinsi aktif.
                   </p>
                 </div>
                 <span className="rounded-xl bg-navy/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-navy">
@@ -1278,7 +1155,7 @@ function DashboardPage() {
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-oren">
-                            Question Text
+                            Teks Pertanyaan
                           </p>
                           <h3 className="mt-2 text-base font-semibold tracking-tight text-ash">
                             {feedback.question_text}
@@ -1318,13 +1195,13 @@ function DashboardPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.22em] text-oren">
-                    User List
+                    Daftar Pengguna
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ash">
-                    User Management
+                    Manajemen Pengguna
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-ash/80">
-                    Kelola role user tanpa akses manual ke database.
+                    Kelola peran pengguna tanpa akses manual ke database.
                   </p>
                 </div>
               </div>
@@ -1392,13 +1269,13 @@ function DashboardPage() {
               <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.22em] text-oren">
-                    Survey List
+                    Daftar Survei
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ash">
-                    Your Surveys
+                    Kelola Survei
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-ash/80">
-                    Kelola survei aktif, arsip, dan draft dari satu tampilan kartu yang responsif.
+                    Kelola survei aktif dan nonaktif. Klik &ldquo;Edit&rdquo; untuk mengubah pertanyaan secara detail.
                   </p>
                 </div>
 
@@ -1409,50 +1286,40 @@ function DashboardPage() {
                     className="inline-flex items-center justify-center rounded-xl bg-oren-muda px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 cursor-pointer h-[48px]"
                   >
                     <Plus size={16} className="mr-2" />
-                    New Survey
+                    Buat Survei
                   </button>
                 </div>
               </div>
 
+              {/* Tab filter: Semua / Aktif / Nonaktif */}
               <div className="mt-5 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveStatusFilter('active')}
-                  className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition cursor-pointer ${
-                    activeStatusFilter === 'active'
-                      ? 'bg-oren-muda text-white'
-                      : 'border border-light-grey bg-white text-ash hover:bg-light-grey/50'
-                  }`}
-                >
-                  Active
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveStatusFilter('archived')}
-                  className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition cursor-pointer ${
-                    activeStatusFilter === 'archived'
-                      ? 'bg-oren-muda text-white'
-                      : 'border border-light-grey bg-white text-ash hover:bg-light-grey/50'
-                  }`}
-                >
-                  Archived
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveStatusFilter('draft')}
-                  className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition cursor-pointer ${
-                    activeStatusFilter === 'draft'
-                      ? 'bg-oren-muda text-white'
-                      : 'border border-light-grey bg-white text-ash hover:bg-light-grey/50'
-                  }`}
-                >
-                  Draft
-                </button>
+                {(['all', 'active', 'inactive'] as const).map((filter) => {
+                  const labels = { all: 'Semua', active: 'Aktif', inactive: 'Nonaktif' }
+                  return (
+                    <button
+                      key={filter}
+                      type="button"
+                      onClick={() => { setActiveStatusFilter(filter); setCurrentPage(1) }}
+                      className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition cursor-pointer ${
+                        activeStatusFilter === filter
+                          ? 'bg-oren-muda text-white'
+                          : 'border border-light-grey bg-white text-ash hover:bg-light-grey/50'
+                      }`}
+                    >
+                      {labels[filter]}
+                      <span className="ml-2 rounded-xl bg-black/10 px-1.5 py-0.5 text-[11px]">
+                        {filter === 'all' ? surveys.length
+                          : filter === 'active' ? surveys.filter(s => s.is_active).length
+                          : surveys.filter(s => !s.is_active).length}
+                      </span>
+                    </button>
+                  )
+                })}
 
                 <button
                   type="button"
                   onClick={() => setIsSearchOpen((current) => !current)}
-                  aria-label="Toggle pencarian kuesioner"
+                  aria-label="Toggle pencarian survei"
                   className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-light-grey bg-white text-ash transition hover:bg-light-grey/50 cursor-pointer"
                 >
                   <Search size={18} />
@@ -1464,8 +1331,8 @@ function DashboardPage() {
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Cari kuesioner..."
+                    onChange={(event) => { setSearchQuery(event.target.value); setCurrentPage(1) }}
+                    placeholder="Cari survei..."
                     className="w-[280px] rounded-xl border border-light-grey bg-white px-4 py-2.5 text-sm text-ash outline-none transition focus:border-oren-muda focus:ring-4 focus:ring-oren-muda/10"
                   />
                 </div>
@@ -1477,240 +1344,133 @@ function DashboardPage() {
                 </div>
               ) : surveysError ? (
                 <p className="mt-5 text-sm text-red-600">{surveysError}</p>
-              ) : activeStatusFilter === 'archived' ? (
+              ) : paginatedSurveys.length === 0 ? (
                 <div className="mt-6 rounded-xl border border-dashed border-light-grey bg-white px-5 py-10 text-center text-sm text-ash/80">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-oren-muda/10 text-oren-muda">
                     <ArchiveX size={22} />
                   </div>
                   <p className="mt-4 text-base font-semibold text-ash">
-                    Belum ada kuesioner yang diarsipkan.
+                    Tidak ada survei yang sesuai filter.
                   </p>
                   <p className="mt-2">
-                    Arsip akan muncul di sini setelah status kuesioner diubah.
+                    Coba ubah tab filter atau kata kunci pencarian.
                   </p>
                 </div>
               ) : (
                 <div className="mt-6 space-y-4">
-                  {visibleSurveys.map((item) => {
-                    const isSelected = selectedSurveyId === item.id
-                    return (
-                      <div
-                        key={item.id}
-                        className={`rounded-xl border border-light-grey bg-white shadow-[0_4px_18px_-6px_rgba(0,0,0,0.08)] transition-all duration-300 ${!isSelected ? 'hover:-translate-y-0.5' : ''}`}
-                      >
-                        <article className="p-4">
-                          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="min-w-0">
-                              <h3 className="text-xl font-semibold tracking-tight text-ash">
-                                {item.title}
-                              </h3>
-                              <p className="mt-2 text-sm font-medium text-oren">
-                                Periode pengisian 1 Januari - 30 Juni 2026
-                              </p>
-                              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-ash/60">
-                                <span>30 Questions</span>
-                                <span className="h-4 w-px bg-light-grey" aria-hidden="true" />
-                                <span>Last Modified {formatSurveyDate(item.created_at)}</span>
-                                <span className={`rounded-xl px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${item.is_active ? 'bg-oren text-white' : 'border border-light-grey bg-white text-oren'}`}>
-                                  {item.is_active ? 'Active' : 'Draft'}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="flex shrink-0 flex-wrap gap-3 lg:justify-end">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (isSelected) {
-                                    setSelectedSurveyId(null)
-                                    setQuestions([])
-                                  } else {
-                                    void handleSelectSurveyQuestions(item.id)
-                                  }
-                                }}
-                                className="inline-flex items-center gap-2 rounded-xl bg-light-blue px-4 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 cursor-pointer"
-                              >
-                                <Pencil size={16} />
-                                {isSelected ? 'Tutup' : 'Edit'}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setSurveyIdToDelete(item.id)}
-                                disabled={deletingSurveyId === item.id}
-                                className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
-                              >
-                                <Trash2 size={16} />
-                                {deletingSurveyId === item.id ? 'Deleting...' : 'Delete'}
-                              </button>
-                            </div>
-                          </div>
-                        </article>
-
-                        <div
-                          className={`grid transition-all duration-300 ease-in-out ${
-                            isSelected ? 'grid-rows-[1fr] opacity-100 border-t border-light-grey' : 'grid-rows-[0fr] opacity-0'
-                          }`}
-                        >
-                          <div className="overflow-hidden bg-[#F5E8C6]/10">
-                            {isSelected && (
-                              <div className="p-4 sm:p-5 space-y-5">
-                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                  <div>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-oren">
-                                      Detail Pertanyaan
-                                    </p>
-                                    <h3 className="mt-2 text-lg font-semibold tracking-tight text-ash">
-                                      {item.title}
-                                    </h3>
-                                  </div>
-                                  <span className="rounded-xl bg-butter/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-ash/80">
-                                    {questions.length} pertanyaan
-                                  </span>
-                                </div>
-
-                                <form
-                                  onSubmit={(event) => void handleCreateQuestion(event)}
-                                  className="grid gap-4 rounded-xl border border-light-grey bg-white p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] lg:grid-cols-[1.4fr_0.7fr_0.6fr_auto] lg:items-end"
-                                >
-                                  <label className="block text-sm font-medium text-ash lg:col-span-1">
-                                    Teks Pertanyaan
-                                    <input
-                                      type="text"
-                                      value={newQuestionText}
-                                      onChange={(event) => setNewQuestionText(event.target.value)}
-                                      placeholder="Contoh: Bagaimana penilaian Anda terhadap layanan ini?"
-                                      className="mt-2 w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-navy/30 focus:ring-offset-1"
-                                    />
-                                  </label>
-
-                                  <label className="block text-sm font-medium text-ash">
-                                    Tipe Data
-                                    <select
-                                      value={newQuestionType}
-                                      onChange={(event) => setNewQuestionType(event.target.value as SurveyQuestionFormType)}
-                                      className="mt-2 w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-navy/30 focus:ring-offset-1 animate-fade-in"
-                                    >
-                                      <option value="dual_likert">Matriks IPA / Dual Likert</option>
-                                      <option value="text">Isian Bebas / Esai (Legacy)</option>
-                                      <option value="short_text">Short Text / Jawaban Singkat</option>
-                                      <option value="long_text">Long Text / Jawaban Panjang</option>
-                                      <option value="checkbox">Checkbox (Banyak Pilihan)</option>
-                                      <option value="dropdown">Dropdown</option>
-                                      <option value="multiple_choice">Multiple Choice (Pilihan Ganda)</option>
-                                      <option value="true_false">True / False (Benar / Salah)</option>
-                                    </select>
-                                  </label>
-
-                                  {['checkbox', 'dropdown', 'multiple_choice'].includes(newQuestionType) && (
-                                    <label className="block text-sm font-medium text-ash lg:col-span-3 animate-fade-in">
-                                      Pilihan Jawaban (pisahkan dengan koma)
-                                      <input
-                                        type="text"
-                                        value={newQuestionOptionsText}
-                                        onChange={(event) => setNewQuestionOptionsText(event.target.value)}
-                                        placeholder="Contoh: Sangat Puas, Cukup Puas, Tidak Puas"
-                                        className="mt-2 w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-navy/30 focus:ring-offset-1"
-                                      />
-                                    </label>
-                                  )}
-
-                                  <label className="flex items-center gap-3 rounded-xl border border-light-grey bg-white px-4 py-3 text-sm font-medium text-ash cursor-pointer select-none">
-                                    <input
-                                      type="checkbox"
-                                      checked={newQuestionRequired}
-                                      onChange={(event) => setNewQuestionRequired(event.target.checked)}
-                                      className="h-4 w-4 rounded border-light-grey text-navy focus:ring-oren"
-                                    />
-                                    Wajib Diisi
-                                  </label>
-
-                                  <button
-                                    type="submit"
-                                    disabled={creatingQuestion}
-                                    className="inline-flex items-center justify-center rounded-xl bg-navy px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer h-[48px]"
-                                  >
-                                    {creatingQuestion ? 'Menyimpan...' : 'Tambah Pertanyaan'}
-                                  </button>
-                                </form>
-
-                                {questionsLoading ? (
-                                  <div className="py-5">
-                                    <LoadingSpinner />
-                                  </div>
-                                ) : questionsError ? (
-                                  <p className="text-sm text-red-600">{questionsError}</p>
-                                ) : questions.length ? (
-                                  <div className="overflow-hidden rounded-xl border border-light-grey shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] bg-white">
-                                    <div className="overflow-x-auto">
-                                      <table className="min-w-full divide-y divide-light-grey text-left text-sm">
-                                        <thead className="bg-light-grey/55 text-xs uppercase tracking-[0.16em] text-ash/70">
-                                          <tr>
-                                            <th className="px-4 py-3">Teks</th>
-                                            <th className="px-4 py-3">Tipe</th>
-                                            <th className="px-4 py-3">Wajib</th>
-                                            <th className="px-4 py-3">Aksi</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-light-grey bg-white">
-                                          {questions.map((question) => (
-                                            <tr key={question.id}>
-                                              <td className="px-4 py-3 font-medium text-ash">
-                                                {question.question_text}
-                                              </td>
-                                              <td className="px-4 py-3 text-ash/80">
-                                                <span className="rounded-xl bg-butter/45 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-ash/90">
-                                                  {question.question_type === 'dual_likert'
-                                                    ? 'Dual Likert'
-                                                    : question.question_type === 'text'
-                                                      ? 'Esai (Legacy)'
-                                                      : question.question_type === 'short_text'
-                                                        ? 'Jawaban Singkat'
-                                                        : question.question_type === 'long_text'
-                                                          ? 'Jawaban Panjang'
-                                                          : question.question_type === 'checkbox'
-                                                            ? 'Checkbox'
-                                                            : question.question_type === 'dropdown'
-                                                              ? 'Dropdown'
-                                                              : question.question_type === 'multiple_choice'
-                                                                ? 'Pilihan Ganda'
-                                                                : question.question_type === 'true_false'
-                                                                  ? 'Benar / Salah'
-                                                                  : question.question_type}
-                                                </span>
-                                              </td>
-                                              <td className="px-4 py-3 text-ash/80">
-                                                <span className={`rounded-xl px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${question.is_required ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-                                                  {question.is_required ? 'Ya' : 'Tidak'}
-                                                </span>
-                                              </td>
-                                              <td className="px-4 py-3 text-ash/80">
-                                                <button
-                                                  type="button"
-                                                  onClick={() => void handleDeleteQuestion(question.id)}
-                                                  disabled={deletingQuestionId === question.id}
-                                                  className="inline-flex items-center justify-center rounded-xl bg-red-500 px-3 py-1.5 text-xs font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
-                                                >
-                                                  {deletingQuestionId === question.id ? '...' : 'Hapus'}
-                                                </button>
-                                              </td>
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="rounded-xl border border-dashed border-light-grey bg-white px-4 py-8 text-center text-sm text-ash/60">
-                                    Belum ada pertanyaan untuk survei ini.
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                  {paginatedSurveys.map((item) => (
+                    <article
+                      key={item.id}
+                      className="rounded-xl border border-light-grey bg-white p-5 shadow-[0_4px_18px_-6px_rgba(0,0,0,0.08)] transition-all duration-200 hover:-translate-y-0.5"
+                    >
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="min-w-0">
+                          <h3 className="text-lg font-semibold tracking-tight text-ash">
+                            {item.title}
+                          </h3>
+                          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-ash/60">
+                            {/* Jumlah pertanyaan — diambil dari DB, bukan hardcoded */}
+                            <span>{item.question_count} Pertanyaan</span>
+                            <span className="h-4 w-px bg-light-grey" aria-hidden="true" />
+                            <span>Dibuat {formatSurveyDate(item.created_at)}</span>
+                            <span
+                              className={`rounded-xl px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${
+                                item.is_active
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : 'border border-light-grey bg-white text-ash/60'
+                              }`}
+                            >
+                              {item.is_active ? 'Aktif' : 'Nonaktif'}
+                            </span>
                           </div>
                         </div>
+
+                        <div className="flex shrink-0 flex-wrap items-center gap-3 lg:justify-end">
+                          {/* Toggle status Aktif / Nonaktif */}
+                          <button
+                            type="button"
+                            onClick={() => void handleToggleSurveyStatus(item)}
+                            disabled={togglingStatusId === item.id}
+                            title={item.is_active ? 'Nonaktifkan survei' : 'Aktifkan survei'}
+                            className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all duration-300 hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer ${
+                              item.is_active
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                : 'border-light-grey bg-white text-ash/70'
+                            }`}
+                          >
+                            {togglingStatusId === item.id ? (
+                              <span className="opacity-60">...</span>
+                            ) : item.is_active ? (
+                              <><ToggleRight size={16} /> Aktif</>
+                            ) : (
+                              <><ToggleLeft size={16} /> Nonaktif</>
+                            )}
+                          </button>
+
+                          {/* Tombol Edit → pergi ke halaman edit survei */}
+                          <Link
+                            to={`/admin/surveys/${item.id}/edit`}
+                            className="inline-flex items-center gap-2 rounded-xl bg-light-blue px-4 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 cursor-pointer"
+                          >
+                            <ExternalLink size={15} />
+                            Edit Survei
+                          </Link>
+
+                          {/* Tombol Hapus */}
+                          <button
+                            type="button"
+                            onClick={() => setSurveyIdToDelete(item.id)}
+                            disabled={deletingSurveyId === item.id}
+                            className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                          >
+                            <Trash2 size={15} />
+                            {deletingSurveyId === item.id ? 'Menghapus...' : 'Hapus'}
+                          </button>
+                        </div>
                       </div>
-                    )
-                  })}
+                    </article>
+                  ))}
+
+                  {/* Kontrol Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-ash/60">
+                          Menampilkan {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, visibleSurveys.length)} dari {visibleSurveys.length} survei
+                        </span>
+                        <select
+                          value={pageSize}
+                          onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1) }}
+                          className="rounded-xl border border-light-grey bg-white px-3 py-1.5 text-sm text-ash outline-none focus:border-oren"
+                        >
+                          <option value={10}>10 / hal</option>
+                          <option value={20}>20 / hal</option>
+                          <option value={50}>50 / hal</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={currentPage === 1}
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          className="rounded-xl border border-light-grey bg-white px-4 py-2 text-sm font-semibold text-ash transition hover:bg-light-grey/50 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          ← Sebelumnya
+                        </button>
+                        <span className="text-sm font-semibold text-ash">
+                          {currentPage} / {totalPages}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={currentPage === totalPages}
+                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                          className="rounded-xl border border-light-grey bg-white px-4 py-2 text-sm font-semibold text-ash transition hover:bg-light-grey/50 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Berikutnya →
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

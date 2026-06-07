@@ -13,14 +13,32 @@ export interface SurveyRow {
   created_at: string;
 }
 
+/** Digunakan bersama view `survey_with_question_count` */
+export interface SurveyWithCount extends SurveyRow {
+  question_count: number;
+}
+
+export interface SectionRow {
+  id: string;
+  survey_id: string;
+  title: string;
+  description: string | null;
+  order_index: number;
+  created_at: string;
+}
+
 export interface QuestionRow {
   id: string;
   survey_id: string;
+  /** Referensi ke section. Null untuk pertanyaan lama yang belum dimigrasikan. */
+  section_id: string | null;
   question_text: string;
   question_type: string;
   options: Json | null;
   is_required: boolean;
   branching_logic: Json | null;
+  /** Urutan tampil dalam section. 0-indexed. */
+  order_index: number;
 }
 
 export interface ResponseRow {
@@ -69,24 +87,46 @@ export interface Database {
         };
         Relationships: [];
       };
+      sections: {
+        Row: SectionRow;
+        Insert: {
+          id?: string;
+          survey_id: string;
+          title: string;
+          description?: string | null;
+          order_index?: number;
+          created_at?: string;
+        };
+        Update: {
+          survey_id?: string;
+          title?: string;
+          description?: string | null;
+          order_index?: number;
+        };
+        Relationships: [];
+      };
       questions: {
         Row: QuestionRow;
         Insert: {
           id?: string;
           survey_id: string;
+          section_id?: string | null;
           question_text: string;
           question_type: string;
           options?: Json | null;
           is_required?: boolean;
           branching_logic?: Json | null;
+          order_index?: number;
         };
         Update: {
           survey_id?: string;
+          section_id?: string | null;
           question_text?: string;
           question_type?: string;
           options?: Json | null;
           is_required?: boolean;
           branching_logic?: Json | null;
+          order_index?: number;
         };
         Relationships: [];
       };

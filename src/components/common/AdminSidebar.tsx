@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { UserCircle2, LogOut } from 'lucide-react'
+import { BarChart2, AlertOctagon, ClipboardList, Users, LogOut, UserCircle2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 const adminData = {
@@ -7,27 +7,33 @@ const adminData = {
   email: 'adminlpdp@gmail.com',
 }
 
+// Urutan menu: fitur utama di atas, Manajemen Pengguna di paling bawah
+const menuItems = [
+  {
+    name: 'Analitik',
+    path: '/admin',
+    icon: BarChart2,
+  },
+  {
+    name: 'Umpan Balik Kritis',
+    path: '/admin/critical-feedback',
+    icon: AlertOctagon,
+  },
+  {
+    name: 'Kelola Survei',
+    path: '/admin/surveys',
+    icon: ClipboardList,
+  },
+  // Manajemen Pengguna dipindah ke posisi paling bawah sesuai permintaan
+  {
+    name: 'Manajemen Pengguna',
+    path: '/admin/respondents',
+    icon: Users,
+  },
+]
+
 const AdminSidebar = () => {
   const navigate = useNavigate()
-  
-  const menuItems = [
-    {
-      name: 'Analytics',
-      path: '/admin',
-    },
-    {
-      name: 'Critical Feedback',
-      path: '/admin/critical-feedback',
-    },
-    {
-      name: 'User Management',
-      path: '/admin/respondents',
-    },
-    {
-      name: 'Kelola Survei',
-      path: '/admin/surveys',
-    },
-  ]
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -41,31 +47,35 @@ const AdminSidebar = () => {
         {/* Sidebar Header */}
         <div className="absolute left-0 top-0 flex h-16 w-full items-center gap-6 bg-light-grey px-5">
           {/* Logo */}
-          <img src="/logo_lpdp.png" alt="LPDP Logo" className="h-8 w-auto object-contain" />
+          <img src="/logo_lpdp.png" alt="Logo LPDP" className="h-8 w-auto object-contain" />
 
           {/* Title */}
           <div className="leading-tight">
-            <h1 className="text-xs font-semibold text-oren-muda">Survey</h1>
+            <h1 className="text-xs font-semibold text-oren-muda">Survei</h1>
             <h1 className="text-xs font-semibold text-oren-muda">Awardee LPDP</h1>
           </div>
         </div>
 
         {/* Navigation */}
         <nav className="flex flex-col gap-3">
-          {menuItems.map((item) => (
-            <NavLink
-              key={item.name}
-              to={item.path}
-              end={item.path === '/admin'}
-              className={({ isActive }) =>
-                `rounded-xl px-5 py-3 text-sm font-medium transition-all duration-300 ${
-                  isActive ? 'bg-oren-muda text-white' : 'text-white hover:bg-[#DE7A49]/20'
-                }`
-              }
-            >
-              {item.name}
-            </NavLink>
-          ))}
+          {menuItems.map((item) => {
+            const Icon = item.icon
+            return (
+              <NavLink
+                key={item.name}
+                to={item.path}
+                end={item.path === '/admin'}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-300 ${
+                    isActive ? 'bg-oren-muda text-white' : 'text-white hover:bg-[#DE7A49]/20'
+                  }`
+                }
+              >
+                <Icon size={16} className="shrink-0 opacity-80" />
+                {item.name}
+              </NavLink>
+            )
+          })}
         </nav>
       </div>
 
@@ -92,7 +102,7 @@ const AdminSidebar = () => {
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-oren-muda px-5 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-[#C9683B]"
         >
           <LogOut size={15} />
-          <span>Logout</span>
+          <span>Keluar</span>
         </button>
       </div>
     </aside>
