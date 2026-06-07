@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import QuestionRenderer from '../../components/questions/QuestionRenderer'
 import { supabase } from '../../lib/supabase'
@@ -11,6 +11,11 @@ type QuestionRow = Database['public']['Tables']['questions']['Row']
 type AnswerInsert = Database['public']['Tables']['answers']['Insert']
 type ResponseInsert = Database['public']['Tables']['responses']['Insert']
 type ProfileRow = Database['public']['Tables']['profiles']['Row']
+type SectionRow = Database['public']['Tables']['sections']['Row']
+
+type SectionWithQuestions = SectionRow & {
+  questions: QuestionRow[]
+}
 
 type AnswerDraft = {
   textValue: string
@@ -108,7 +113,10 @@ function SurveyPage() {
   const { id } = useParams<{ id: string }>()
   const surveyParam = id ?? ''
   const draftKey = surveyParam ? `lpdp_survey_draft_${surveyParam}` : null
+  const location = useLocation()
+  const isPreview = new URLSearchParams(location.search).get('preview') === 'true'
   const [survey, setSurvey] = useState<SurveyRow | null>(null)
+  const [sections, setSections] = useState<SectionWithQuestions[]>([])
   const [questions, setQuestions] = useState<QuestionRow[]>([])
   const [answers, setAnswers] = useState<Record<string, AnswerDraft>>({})
   const [awardeeProfile, setAwardeeProfile] = useState<ProfileRow | null>(null)
@@ -122,9 +130,9 @@ function SurveyPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const isSurveyActive = survey?.is_active ?? false
-  const totalQuestions = questions.length
-  const currentQuestion = questions[currentStep] ?? null
-  const progressPercentage = totalQuestions > 0 ? ((currentStep + 1) / totalQuestions) * 100 : 0
+  const totalSteps = sections.length
+  const currentSection = sections[currentStep] ?? null
+  const progressPercentage = totalSteps > 0 ? ((currentStep + 1) / totalSteps) * 100 : 0
   const hasDraftInteractionRef = useRef(false)
   const hasStarted = useMemo(() => Object.values(answers).some(hasAnswerContent), [answers])
 
@@ -351,23 +359,7 @@ function SurveyPage() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (!currentQuestion) {
-      return
-    }
-
-    if (currentStep < totalQuestions - 1) {
-      hasDraftInteractionRef.current = true
-      setCurrentStep((step) => Math.min(step + 1, totalQuestions - 1))
-      return
-    }
-
-    if (!survey) {
-      return
-    }
-
-    if (!isSurveyActive) {
-      setSubmitError('Survei sudah ditutup dan tidak dapat menerima jawaban baru.')
-      toast.error('Survei sudah ditutup dan tidak dapat menerima jawaban baru.')
+    if (!currentSection) {
       return
     }
 
@@ -375,7 +367,8 @@ function SurveyPage() {
     setSubmitError(null)
     setSuccessMessage(null)
 
-    for (const question of questions) {
+    // Validasi HANYA untuk section ini sebelum lanjut
+    for (const question of currentSection.questions) {
       const answer = answers[question.id] ?? emptyAnswerDraft
 
       if (question.question_type === 'dual_likert') {
@@ -422,6 +415,33 @@ function SurveyPage() {
           }
         }
       }
+    }
+
+    if (currentStep < totalSteps - 1) {
+      hasDraftInteractionRef.current = true
+      setCurrentStep((step) => Math.min(step + 1, totalSteps - 1))
+      setSubmitting(false)
+      window.scrollTo(0, 0)
+      return
+    }
+
+    if (!survey) {
+      setSubmitting(false)
+      return
+    }
+
+    if (isPreview) {
+      toast.success('Simulasi berhasil dikirim! Karena ini mode preview, data tidak disimpan.')
+      setSubmitting(false)
+      setIsSubmitted(true)
+      return
+    }
+
+    if (!isSurveyActive) {
+      setSubmitError('Survei sudah ditutup dan tidak dapat menerima jawaban baru.')
+      toast.error('Survei sudah ditutup dan tidak dapat menerima jawaban baru.')
+      setSubmitting(false)
+      return
     }
 
     const responsePayload: ResponseInsert = {
@@ -526,17 +546,47 @@ function SurveyPage() {
 
       const resolvedSurveyId = resolvedSurvey.id
 
+      const sectionsResult = await supabase
+        .from('sections')
+        .select('id, survey_id, title, description, order_index, created_at')
+        .eq('survey_id', resolvedSurveyId)
+        .order('order_index', { ascending: true })
+
       const questionsResult = await supabase
         .from('questions')
-        .select('id, survey_id, question_text, question_type, options, is_required, branching_logic')
+        .select('id, survey_id, section_id, question_text, question_type, options, is_required, branching_logic, order_index')
         .eq('survey_id', resolvedSurveyId)
+        .order('order_index', { ascending: true })
 
       if (!cancelled) {
         if (questionsResult.error) {
           setError(questionsResult.error.message)
         } else {
           setSurvey(resolvedSurvey)
-          setQuestions(questionsResult.data ?? [])
+          
+          const rawSections = (sectionsResult.data ?? []) as SectionRow[]
+          const rawQuestions = (questionsResult.data ?? []) as QuestionRow[]
+          
+          const merged: SectionWithQuestions[] = rawSections.map((sec) => ({
+            ...sec,
+            questions: rawQuestions.filter((q) => q.section_id === sec.id),
+          }))
+          
+          const orphans = rawQuestions.filter((q) => !q.section_id)
+          if (orphans.length > 0) {
+            merged.push({
+              id: '__orphan__',
+              survey_id: resolvedSurveyId,
+              title: 'Umum',
+              description: '',
+              order_index: 999,
+              created_at: '',
+              questions: orphans,
+            })
+          }
+
+          setSections(merged)
+          setQuestions(rawQuestions)
           setCurrentStep(0)
         }
         setLoading(false)
@@ -623,10 +673,10 @@ function SurveyPage() {
               Isi pertanyaan berikut untuk membantu kami membaca pengalaman layanan LPDP secara lebih akurat.
             </p>
 
-            {totalQuestions > 0 ? (
+            {totalSteps > 0 ? (
               <div className="mt-6 rounded-2xl border border-light-grey bg-white p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)]">
                 <div className="mb-3 flex items-center justify-between gap-3 text-xs font-medium uppercase tracking-[0.18em] text-ash/50">
-                  <span>{`Pertanyaan ${currentStep + 1} dari ${totalQuestions}`}</span>
+                  <span>{`Bagian ${currentStep + 1} dari ${totalSteps}`}</span>
                   <span>{`${Math.round(progressPercentage)}%`}</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-slate-200">
@@ -638,11 +688,17 @@ function SurveyPage() {
               </div>
             ) : null}
 
-            {!isSurveyActive ? (
+            {!isSurveyActive && !isPreview ? (
               <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 Periode survei sudah ditutup. Jawaban baru tidak dapat dikirim.
               </div>
             ) : null}
+
+            {isPreview && (
+              <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 font-medium">
+                Preview Mode - Simulasi tampilan responden. Data tidak akan disimpan.
+              </div>
+            )}
 
             {submitError ? (
               <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -656,48 +712,67 @@ function SurveyPage() {
               </div>
             ) : null}
 
-            <div className="mt-8 space-y-6">
-              {currentQuestion ? (
-                <div className="relative">
-                  {isAutoFilledQuestion(currentQuestion.id) ? (
-                    <div className="absolute right-0 top-0 flex flex-col items-end gap-2">
-                      <span className="rounded-xl bg-navy/10 px-3 py-1 text-[11px] font-semibold text-navy">
-                        ✓ Terisi otomatis dari profil Anda
-                      </span>
-                      <Link
-                        to="/profile"
-                        className="text-[11px] font-semibold text-navy underline decoration-oren decoration-2 underline-offset-4 transition hover:text-oren"
-                      >
-                        👉 Ada data keliru? Perbarui profil Anda di sini
-                      </Link>
-                    </div>
-                  ) : null}
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy text-sm font-semibold text-white">
-                      {currentStep + 1}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-lg font-semibold tracking-tight text-ash">
-                          {currentQuestion.question_text}
-                        </h2>
-                        {currentQuestion.is_required ? (
-                          <span className="rounded-xl bg-oren/10 px-2.5 py-1 text-xs font-medium text-oren">
-                            Wajib
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="mt-1 text-xs uppercase tracking-[0.18em] text-ash/40">
-                        {currentQuestion.question_type}
-                      </p>
-                      {renderQuestionInput(currentQuestion)}
-                    </div>
+            <div className="mt-8 space-y-8">
+              {currentSection ? (
+                <>
+                  <div className="border-b border-light-grey pb-4">
+                    <h2 className="text-xl font-bold tracking-tight text-ash">
+                      {currentSection.title}
+                    </h2>
+                    {currentSection.description && (
+                      <p className="mt-2 text-sm text-ash/70">{currentSection.description}</p>
+                    )}
                   </div>
-                </div>
+
+                  <div className="space-y-12">
+                    {currentSection.questions.map((question, qIdx) => {
+                      const questionsBefore = sections
+                        .slice(0, currentStep)
+                        .reduce((sum, s) => sum + s.questions.length, 0)
+                      const globalIndex = questionsBefore + qIdx + 1
+                      return (
+                        <div key={question.id} className="relative">
+                          {isAutoFilledQuestion(question.id) ? (
+                            <div className="absolute right-0 top-0 flex flex-col items-end gap-2">
+                              <span className="rounded-xl bg-navy/10 px-3 py-1 text-[11px] font-semibold text-navy">
+                                ✓ Terisi otomatis dari profil Anda
+                              </span>
+                              <Link
+                                to="/profile"
+                                className="text-[11px] font-semibold text-navy underline decoration-oren decoration-2 underline-offset-4 transition hover:text-oren"
+                              >
+                                👉 Ada data keliru? Perbarui profil Anda di sini
+                              </Link>
+                            </div>
+                          ) : null}
+                          <div className="flex items-start gap-4">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy text-sm font-semibold text-white">
+                              {globalIndex}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="text-lg font-semibold tracking-tight text-ash">
+                                  {question.question_text}
+                                </h3>
+                                {question.is_required ? (
+                                  <span className="rounded-xl bg-oren/10 px-2.5 py-1 text-xs font-medium text-oren">
+                                    Wajib
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div className="mb-4" />
+                              {renderQuestionInput(question)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               ) : null}
             </div>
 
-            {isSurveyActive ? (
+            {isSurveyActive || isPreview ? (
               <div className="mt-8 flex items-center justify-between gap-3">
                 <div>
                   {currentStep > 0 ? (
@@ -706,6 +781,7 @@ function SurveyPage() {
                       onClick={() => {
                         hasDraftInteractionRef.current = true
                         setCurrentStep((step) => Math.max(step - 1, 0))
+                        window.scrollTo(0, 0)
                       }}
                       disabled={submitting}
                       className="inline-flex items-center justify-center rounded-xl border border-light-grey bg-transparent px-6 py-3 text-sm font-semibold text-ash/80 transition-colors hover:bg-slate-50 hover:text-ash disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
@@ -715,7 +791,7 @@ function SurveyPage() {
                   ) : null}
                 </div>
 
-                {currentStep < totalQuestions - 1 ? (
+                {currentStep < totalSteps - 1 ? (
                   <button
                     type="submit"
                     disabled={submitting}

@@ -1,0 +1,43 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "all_changes_saved": "All changes saved",
+    "active": "Active",
+    "inactive": "Inactive",
+    "archived": "Archived",
+    "question": "Question",
+    "section": "Section",
+    "response": "Response",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "edit": "Edit",
+    "delete": "Delete",
+    "duplicate": "Duplicate",
+    "archive": "Archive",
+    "restore": "Restore",
+    "preview": "Preview",
+    "all": "All"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "manage_surveys": "Manage Surveys",
+    "add_survey": "Create New Survey",
+    "search": "Search surveys...",
+    "status": "Status"
+  },
+  "survey": {
+    "questions_count": "{{count}} questions",
+    "sections_count": "{{count}} sections",
+    "responses_count": "{{count}} responses"
+  },
+  "sidebar": {
+    "analytics": "Analytics",
+    "critical_feedback": "Critical Feedback",
+    "manage_surveys": "Manage Surveys",
+    "manage_users": "Manage Users",
+    "logout": "Logout"
+  }
+}

@@ -10,6 +10,7 @@ export interface SurveyRow {
   id: string;
   title: string;
   is_active: boolean;
+  is_archived: boolean;
   created_at: string;
 }
 
@@ -78,11 +79,13 @@ export interface Database {
           id?: string;
           title: string;
           is_active?: boolean;
+          is_archived?: boolean;
           created_at?: string;
         };
         Update: {
           title?: string;
           is_active?: boolean;
+          is_archived?: boolean;
           created_at?: string;
         };
         Relationships: [];

@@ -1,0 +1,43 @@
+{
+  "common": {
+    "save": "Simpan",
+    "cancel": "Batal",
+    "saving": "Menyimpan...",
+    "all_changes_saved": "Semua perubahan tersimpan",
+    "active": "Aktif",
+    "inactive": "Nonaktif",
+    "archived": "Arsip",
+    "question": "Pertanyaan",
+    "section": "Bagian",
+    "response": "Respons",
+    "back": "Kembali",
+    "next": "Selanjutnya",
+    "submit": "Kirim",
+    "edit": "Edit",
+    "delete": "Hapus",
+    "duplicate": "Duplikat",
+    "archive": "Arsipkan",
+    "restore": "Pulihkan",
+    "preview": "Preview",
+    "all": "Semua"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "manage_surveys": "Kelola Survei",
+    "add_survey": "Buat Survei Baru",
+    "search": "Cari survei...",
+    "status": "Status"
+  },
+  "survey": {
+    "questions_count": "{{count}} pertanyaan",
+    "sections_count": "{{count}} bagian",
+    "responses_count": "{{count}} respons"
+  },
+  "sidebar": {
+    "analytics": "Analitik",
+    "critical_feedback": "Umpan Balik Kritis",
+    "manage_surveys": "Kelola Survei",
+    "manage_users": "Manajemen Pengguna",
+    "logout": "Keluar"
+  }
+}

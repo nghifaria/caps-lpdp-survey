@@ -120,12 +120,13 @@ function DashboardPage() {
   // Gunakan SurveyWithCount agar question_count sudah ter-fetch sekaligus (tanpa N+1)
   const [surveys, setSurveys] = useState<SurveyWithCount[]>([])
   const [responses, setResponses] = useState<ResponseWithAnswers[]>([])
+  const [lastFetchedSurveyId, setLastFetchedSurveyId] = useState<string | null>(null)
   const [selectedProvince, setSelectedProvince] = useState('all')
   const [activeTab, setActiveTab] = useState<'analytics' | 'critical-feedback' | 'users' | 'manage-surveys'>('analytics')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  // Tab status: 'all' | 'active' | 'inactive'
-  const [activeStatusFilter, setActiveStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  // Tab status: 'all' | 'active' | 'inactive' | 'archived'
+  const [activeStatusFilter, setActiveStatusFilter] = useState<'all' | 'active' | 'inactive' | 'archived'>('all')
   const [surveyIdToDelete, setSurveyIdToDelete] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [updatingStatus, setUpdatingStatus] = useState(false)
@@ -140,7 +141,9 @@ function DashboardPage() {
   const [newSurveyTitle, setNewSurveyTitle] = useState('')
   const [creatingSurvey, setCreatingSurvey] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [deletingSurveyId, setDeletingSurveyId] = useState<string | null>(null)
+  const [archivingSurveyId, setArchivingSurveyId] = useState<string | null>(null)
+  const [duplicatingSurveyId, setDuplicatingSurveyId] = useState<string | null>(null)
+  const [surveyIdToArchive, setSurveyIdToArchive] = useState<string | null>(null)
   const [togglingStatusId, setTogglingStatusId] = useState<string | null>(null)
   // Pagination: 20 per halaman default
   const [currentPage, setCurrentPage] = useState(1)
@@ -168,7 +171,7 @@ function DashboardPage() {
     setSurveysError(null)
     const { data, error: surveyListError } = await (supabase as any)
       .from('survey_with_question_count')
-      .select('id, title, is_active, created_at, question_count')
+      .select('id, title, is_active, created_at, question_count, is_archived')
       .order('created_at', { ascending: false })
 
     if (surveyListError) {
@@ -253,7 +256,7 @@ function DashboardPage() {
       // Load surveys list via view untuk efisiensi (sekalian dapat question_count)
       const { data: surveysData, error: surveysListError } = await (supabase as any)
         .from('survey_with_question_count')
-        .select('id, title, is_active, created_at, question_count')
+        .select('id, title, is_active, is_archived, created_at, question_count')
         .order('created_at', { ascending: false })
 
       if (surveysListError) {
@@ -266,6 +269,10 @@ function DashboardPage() {
 
       const surveyRows = (surveysData ?? []) as SurveyRow[]
 
+      if (!cancelled) {
+        setSurveysLoading(false)
+      }
+
       let resolvedSurvey: SurveyRow | null = null
       if (surveyRows.length > 0) {
         const seed = surveyRows.find((s: SurveyRow) => s.title === 'Survei Kepuasan Layanan LPDP 2026')
@@ -274,27 +281,13 @@ function DashboardPage() {
 
       if (!resolvedSurvey) {
         if (!cancelled) {
-          setError('Belum ada kuesioner terdaftar di database.')
           setLoading(false)
         }
         return
       }
 
-      const responsesResult = await supabase
-        .from('responses')
-        .select(
-          'id, survey_id, submitted_at, answers(id, response_id, question_id, text_value, score_performance, score_importance, reason, questions(id, question_text, question_type))',
-        )
-        .eq('survey_id', resolvedSurvey.id)
-        .order('submitted_at', { ascending: false })
-
       if (!cancelled) {
-        if (responsesResult.error) {
-          setError(responsesResult.error.message)
-        } else {
-          setSurvey(resolvedSurvey)
-          setResponses((responsesResult.data ?? []) as ResponseWithAnswers[])
-        }
+        setSurvey(resolvedSurvey)
         setLoading(false)
       }
     }
@@ -306,28 +299,50 @@ function DashboardPage() {
     }
   }, [])
 
-  async function handleSurveyChange(surveyId: string) {
+  function handleSurveyChange(surveyId: string) {
     const selected = surveys.find((s) => s.id === surveyId)
     if (!selected) return
 
-    setLoading(true)
-    setError(null)
-    const { data: responsesData, error: respError } = await supabase
-      .from('responses')
-      .select(
-        'id, survey_id, submitted_at, answers(id, response_id, question_id, text_value, score_performance, score_importance, reason, questions(id, question_text, question_type))',
-      )
-      .eq('survey_id', surveyId)
-      .order('submitted_at', { ascending: false })
-
-    if (respError) {
-      setError(respError.message)
-    } else {
-      setSurvey(selected)
-      setResponses((responsesData ?? []) as ResponseWithAnswers[])
-    }
-    setLoading(false)
+    setSurvey(selected)
   }
+
+  // Fetch responses lazily only when needed
+  useEffect(() => {
+    let cancelled = false
+
+    async function fetchResponses() {
+      if (!survey) return
+      if (activeTab !== 'analytics' && activeTab !== 'critical-feedback') return
+
+      if (lastFetchedSurveyId === survey.id) return
+
+      setLoading(true)
+      setError(null)
+      const { data: responsesData, error: respError } = await supabase
+        .from('responses')
+        .select(
+          'id, survey_id, submitted_at, answers(id, response_id, question_id, text_value, score_performance, score_importance, reason, questions(id, question_text, question_type))',
+        )
+        .eq('survey_id', survey.id)
+        .order('submitted_at', { ascending: false })
+
+      if (!cancelled) {
+        if (respError) {
+          setError(respError.message)
+        } else {
+          setResponses((responsesData ?? []) as ResponseWithAnswers[])
+          setLastFetchedSurveyId(survey.id)
+        }
+        setLoading(false)
+      }
+    }
+
+    void fetchResponses()
+
+    return () => {
+      cancelled = true
+    }
+  }, [survey?.id, activeTab, lastFetchedSurveyId])
 
   const filteredResponses = useMemo(() => {
     if (selectedProvince === 'all') {
@@ -698,27 +713,62 @@ function DashboardPage() {
     setCreatingSurvey(false)
   }
 
-  async function handleDeleteSurvey(surveyId: string) {
+  async function handleArchiveSurvey(surveyId: string) {
     const targetSurvey = surveys.find((item) => item.id === surveyId)
 
     if (!targetSurvey) {
       return
     }
 
-    setSurveyIdToDelete(null)
-    setDeletingSurveyId(surveyId)
+    setSurveyIdToArchive(null)
+    setArchivingSurveyId(surveyId)
 
-    const { error: deleteError } = await supabase.from('surveys').delete().eq('id', surveyId)
+    const { error: archiveError } = await supabase.from('surveys').update({ is_archived: true }).eq('id', surveyId)
 
-    if (deleteError) {
-      toast.error(deleteError.message)
-      setDeletingSurveyId(null)
+    if (archiveError) {
+      toast.error(archiveError.message)
+      setArchivingSurveyId(null)
       return
     }
 
     await loadSurveys()
-    toast.success('Survei berhasil dihapus.')
-    setDeletingSurveyId(null)
+    toast.success('Survei berhasil diarsipkan.')
+    setArchivingSurveyId(null)
+  }
+
+  async function handleDeleteSurvey(surveyId: string) {
+    const { error: deleteError } = await supabase.from('surveys').delete().eq('id', surveyId)
+    if (deleteError) {
+      toast.error(deleteError.message)
+    } else {
+      toast.success('Survei berhasil dihapus permanen.')
+      await loadSurveys()
+    }
+    setSurveyIdToDelete(null)
+  }
+
+  async function handleRestoreSurvey(surveyId: string) {
+    setUpdatingStatus(true)
+    const { error: restoreError } = await supabase.from('surveys').update({ is_archived: false }).eq('id', surveyId)
+    if (restoreError) {
+      toast.error(restoreError.message)
+    } else {
+      toast.success('Survei berhasil dipulihkan.')
+      await loadSurveys()
+    }
+    setUpdatingStatus(false)
+  }
+
+  async function handleDuplicateSurvey(surveyId: string) {
+    setDuplicatingSurveyId(surveyId)
+    const { data, error } = await supabase.rpc('duplicate_survey', { source_survey_id: surveyId })
+    if (error) {
+      toast.error(error.message)
+    } else {
+      toast.success('Survei berhasil diduplikasi.')
+      await loadSurveys()
+    }
+    setDuplicatingSurveyId(null)
   }
 
   function exportCsv() {
@@ -781,12 +831,16 @@ function DashboardPage() {
   const visibleSurveys = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
     return surveys.filter((surveyItem) => {
-      const matchesStatus =
-        activeStatusFilter === 'all'
-          ? true
-          : activeStatusFilter === 'active'
-            ? surveyItem.is_active
-            : !surveyItem.is_active
+      let matchesStatus = false
+      if (activeStatusFilter === 'all') {
+        matchesStatus = !surveyItem.is_archived
+      } else if (activeStatusFilter === 'active') {
+        matchesStatus = surveyItem.is_active && !surveyItem.is_archived
+      } else if (activeStatusFilter === 'inactive') {
+        matchesStatus = !surveyItem.is_active && !surveyItem.is_archived
+      } else if (activeStatusFilter === 'archived') {
+        matchesStatus = surveyItem.is_archived
+      }
 
       const matchesSearch = !query || surveyItem.title.toLowerCase().includes(query)
       return matchesStatus && matchesSearch
@@ -1291,15 +1345,15 @@ function DashboardPage() {
                 </div>
               </div>
 
-              {/* Tab filter: Semua / Aktif / Nonaktif */}
+              {/* Tab filter: Semua / Aktif / Nonaktif / Arsip */}
               <div className="mt-5 flex flex-wrap items-center gap-3">
-                {(['all', 'active', 'inactive'] as const).map((filter) => {
-                  const labels = { all: 'Semua', active: 'Aktif', inactive: 'Nonaktif' }
+                {(['all', 'active', 'inactive', 'archived'] as const).map((filter) => {
+                  const labels = { all: 'Semua', active: 'Aktif', inactive: 'Nonaktif', archived: 'Arsip' }
                   return (
                     <button
                       key={filter}
                       type="button"
-                      onClick={() => { setActiveStatusFilter(filter); setCurrentPage(1) }}
+                      onClick={() => { setActiveStatusFilter(filter as 'all' | 'active' | 'inactive' | 'archived'); setCurrentPage(1) }}
                       className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition cursor-pointer ${
                         activeStatusFilter === filter
                           ? 'bg-oren-muda text-white'
@@ -1308,9 +1362,10 @@ function DashboardPage() {
                     >
                       {labels[filter]}
                       <span className="ml-2 rounded-xl bg-black/10 px-1.5 py-0.5 text-[11px]">
-                        {filter === 'all' ? surveys.length
-                          : filter === 'active' ? surveys.filter(s => s.is_active).length
-                          : surveys.filter(s => !s.is_active).length}
+                        {filter === 'all' ? surveys.filter(s => !s.is_archived).length
+                          : filter === 'active' ? surveys.filter(s => s.is_active && !s.is_archived).length
+                          : filter === 'inactive' ? surveys.filter(s => !s.is_active && !s.is_archived).length
+                          : surveys.filter(s => s.is_archived).length}
                       </span>
                     </button>
                   )
@@ -1416,16 +1471,61 @@ function DashboardPage() {
                             Edit Survei
                           </Link>
 
-                          {/* Tombol Hapus */}
+                          {/* Tombol Restore (hanya jika arsip) */}
+                          {item.is_archived ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => void handleRestoreSurvey(item.id)}
+                                disabled={updatingStatus}
+                                className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition-all duration-300 hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                              >
+                                Pulihkan
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSurveyIdToDelete(item.id)}
+                                className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 transition-all duration-300 hover:brightness-105 active:scale-95 cursor-pointer"
+                              >
+                                <Trash2 size={15} />
+                                Hapus Permanen
+                              </button>
+                            </>
+                          ) : null}
+
+                          {/* Tombol Preview */}
+                          {!item.is_archived && (
+                            <Link
+                              to={`/survey/${item.id}?preview=true`}
+                              target="_blank"
+                              className="inline-flex items-center gap-2 rounded-xl border border-light-grey bg-white px-4 py-2.5 text-sm font-semibold text-ash/80 transition-all duration-300 hover:bg-light-grey/50 active:scale-95 cursor-pointer"
+                            >
+                              Preview
+                            </Link>
+                          )}
+
+                          {/* Tombol Duplicate */}
                           <button
                             type="button"
-                            onClick={() => setSurveyIdToDelete(item.id)}
-                            disabled={deletingSurveyId === item.id}
-                            className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                            onClick={() => void handleDuplicateSurvey(item.id)}
+                            disabled={duplicatingSurveyId === item.id}
+                            className="inline-flex items-center gap-2 rounded-xl border border-light-grey bg-white px-4 py-2.5 text-sm font-semibold text-ash/80 transition-all duration-300 hover:bg-light-grey/50 active:scale-95 cursor-pointer"
                           >
-                            <Trash2 size={15} />
-                            {deletingSurveyId === item.id ? 'Menghapus...' : 'Hapus'}
+                            {duplicatingSurveyId === item.id ? 'Menduplikasi...' : 'Duplikat'}
                           </button>
+
+                          {/* Tombol Arsipkan */}
+                          {!item.is_archived && (
+                            <button
+                              type="button"
+                              onClick={() => setSurveyIdToArchive(item.id)}
+                              disabled={archivingSurveyId === item.id}
+                              className="inline-flex items-center gap-2 rounded-xl bg-ash/10 px-4 py-2.5 text-sm font-semibold text-ash/80 transition-all duration-300 hover:bg-ash/20 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                            >
+                              <ArchiveX size={15} />
+                              {archivingSurveyId === item.id ? 'Mengarsipkan...' : 'Arsipkan'}
+                            </button>
+                          )}
                         </div>
                       </div>
                     </article>
@@ -1531,19 +1631,56 @@ function DashboardPage() {
                 </div>
               ) : null}
 
+              {surveyIdToArchive ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
+                  <div className="w-full max-w-lg rounded-2xl border border-light-grey bg-white p-6 shadow-[0_30px_80px_rgba(0,0,0,0.25)] animate-scale-up">
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ash/10 text-ash">
+                        <ArchiveX size={20} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold tracking-tight text-ash">
+                          Arsipkan kuesioner?
+                        </h3>
+                        <p className="mt-2 text-sm leading-6 text-ash/80">
+                          Apakah Anda yakin ingin mengarsipkan kuesioner ini? Survei tidak akan terlihat di daftar aktif, namun data respons tetap tersimpan.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setSurveyIdToArchive(null)}
+                        className="inline-flex items-center justify-center rounded-xl border border-light-grey bg-white px-5 py-3 text-sm font-semibold text-ash transition hover:bg-light-grey/50 cursor-pointer"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleArchiveSurvey(surveyIdToArchive)}
+                        className="inline-flex items-center justify-center rounded-xl bg-ash px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 cursor-pointer"
+                      >
+                        Ya, Arsipkan
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
               {surveyIdToDelete ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
                   <div className="w-full max-w-lg rounded-2xl border border-light-grey bg-white p-6 shadow-[0_30px_80px_rgba(0,0,0,0.25)] animate-scale-up">
                     <div className="flex items-start gap-4">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
                         <Trash2 size={20} />
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold tracking-tight text-ash">
-                          Hapus kuesioner?
+                          Hapus Permanen?
                         </h3>
                         <p className="mt-2 text-sm leading-6 text-ash/80">
-                          Apakah Anda yakin ingin menghapus kuesioner ini? Tindakan ini akan menghapus seluruh pertanyaan dan respons responden di dalamnya secara permanen.
+                          Tindakan ini tidak dapat dibatalkan. Semua data survei beserta pertanyaan dan respons di dalamnya akan terhapus selamanya.
                         </p>
                       </div>
                     </div>
@@ -1559,9 +1696,9 @@ function DashboardPage() {
                       <button
                         type="button"
                         onClick={() => void handleDeleteSurvey(surveyIdToDelete)}
-                        className="inline-flex items-center justify-center rounded-xl bg-red-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-600 cursor-pointer"
+                        className="inline-flex items-center justify-center rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700 cursor-pointer"
                       >
-                        Ya, Hapus
+                        Ya, Hapus Permanen
                       </button>
                     </div>
                   </div>

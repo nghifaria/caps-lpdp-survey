@@ -12,6 +12,9 @@
  */
 
 import { useEffect, useState, type FormEvent } from 'react'
+
+
+import { useDebounce } from '../../hooks/useDebounce'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -89,7 +92,6 @@ export default function EditSurveyPage() {
   // State untuk edit judul survei
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState('')
-  const [savingTitle, setSavingTitle] = useState(false)
 
   // State untuk tambah section baru
   const [isAddingSectionOpen, setIsAddingSectionOpen] = useState(false)
@@ -99,7 +101,6 @@ export default function EditSurveyPage() {
   // State untuk edit section (inline per section)
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
   const [editingSectionTitle, setEditingSectionTitle] = useState('')
-  const [savingSection, setSavingSection] = useState(false)
   const [deletingSectionId, setDeletingSectionId] = useState<string | null>(null)
 
   // State untuk tambah pertanyaan baru
@@ -122,12 +123,13 @@ export default function EditSurveyPage() {
     optionsText: string
   }
   const [editingQuestion, setEditingQuestion] = useState<EditQuestionState | null>(null)
-  const [savingQuestion, setSavingQuestion] = useState(false)
   const [deletingQuestionId, setDeletingQuestionId] = useState<string | null>(null)
 
   // Konfirmasi hapus
   const [confirmDeleteSection, setConfirmDeleteSection] = useState<string | null>(null)
   const [confirmDeleteQuestion, setConfirmDeleteQuestion] = useState<string | null>(null)
+  
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
   // Warning saat ganti tipe pertanyaan yang sudah punya data
   const [typeChangeWarning, setTypeChangeWarning] = useState<{
@@ -143,7 +145,6 @@ export default function EditSurveyPage() {
     setError(null)
 
     try {
-      // Load survei
       const { data: surveyData, error: surveyError } = await supabase
         .from('surveys')
         .select('id, title, is_active, created_at')
@@ -156,7 +157,6 @@ export default function EditSurveyPage() {
       setSurvey(surveyData as SurveyRow)
       setTitleDraft(surveyData.title)
 
-      // Load sections survei ini
       const { data: sectionsData, error: sectionsError } = await supabase
         .from('sections')
         .select('id, survey_id, title, description, order_index, created_at')
@@ -167,7 +167,6 @@ export default function EditSurveyPage() {
 
       const rawSections = (sectionsData ?? []) as SectionRow[]
 
-      // Load pertanyaan per section
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions')
         .select(
@@ -180,13 +179,11 @@ export default function EditSurveyPage() {
 
       const allQuestions = (questionsData ?? []) as QuestionRow[]
 
-      // Gabungkan sections + questions
       const merged: SectionWithQuestions[] = rawSections.map((section) => ({
         ...section,
         questions: allQuestions.filter((q) => q.section_id === section.id),
       }))
 
-      // Pertanyaan tanpa section (legacy) — tampilkan di bawah jika ada
       const orphanQuestions = allQuestions.filter((q) => !q.section_id)
       if (orphanQuestions.length > 0) {
         merged.push({
@@ -213,26 +210,30 @@ export default function EditSurveyPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [surveyId])
 
-  // ── Edit judul survei ──────────────────────────────────────────────────────
-  async function handleSaveTitle(e: FormEvent) {
-    e.preventDefault()
-    const trimmed = titleDraft.trim()
-    if (!trimmed || !survey) return
+  // ── Autosave Judul Survei ──────────────────────────────────────────────────
+  const debouncedTitle = useDebounce(titleDraft, 1000)
 
-    setSavingTitle(true)
+  useEffect(() => {
+    if (survey && debouncedTitle && debouncedTitle !== survey.title) {
+      void saveTitleAuto(debouncedTitle)
+    }
+  }, [debouncedTitle])
+
+  async function saveTitleAuto(newTitle: string) {
+    setSaveStatus('saving')
     const { error: updateError } = await supabase
       .from('surveys')
-      .update({ title: trimmed })
-      .eq('id', survey.id)
+      .update({ title: newTitle })
+      .eq('id', survey!.id)
 
     if (updateError) {
+      setSaveStatus('error')
       toast.error(updateError.message)
     } else {
-      setSurvey((prev) => (prev ? { ...prev, title: trimmed } : prev))
-      setIsEditingTitle(false)
-      toast.success('Judul survei berhasil diperbarui.')
+      setSurvey((prev) => (prev ? { ...prev, title: newTitle } : prev))
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus('idle'), 2000)
     }
-    setSavingTitle(false)
   }
 
   // ── Tambah section ─────────────────────────────────────────────────────────
@@ -259,34 +260,45 @@ export default function EditSurveyPage() {
     setAddingSection(false)
   }
 
-  // ── Edit section title ─────────────────────────────────────────────────────
+  // ── Autosave Edit Section Title ────────────────────────────────────────────
   function startEditSection(section: SectionWithQuestions) {
     setEditingSectionId(section.id)
     setEditingSectionTitle(section.title)
   }
 
-  async function handleSaveSection(e: FormEvent) {
-    e.preventDefault()
-    if (!editingSectionId) return
-    const title = editingSectionTitle.trim()
-    if (!title) return
+  const debouncedSectionTitle = useDebounce(editingSectionTitle, 1000)
 
-    setSavingSection(true)
+  useEffect(() => {
+    if (editingSectionId && debouncedSectionTitle) {
+      const original = sections.find(s => s.id === editingSectionId)?.title
+      if (original && original !== debouncedSectionTitle) {
+        void saveSectionAuto(editingSectionId, debouncedSectionTitle)
+      }
+    }
+  }, [debouncedSectionTitle])
+
+  async function saveSectionAuto(sectionId: string, newTitle: string) {
+    setSaveStatus('saving')
     const { error: updateError } = await supabase
       .from('sections')
-      .update({ title })
-      .eq('id', editingSectionId)
+      .update({ title: newTitle })
+      .eq('id', sectionId)
 
     if (updateError) {
+      setSaveStatus('error')
       toast.error(updateError.message)
     } else {
       setSections((prev) =>
-        prev.map((s) => (s.id === editingSectionId ? { ...s, title } : s)),
+        prev.map((s) => (s.id === sectionId ? { ...s, title: newTitle } : s)),
       )
-      setEditingSectionId(null)
-      toast.success('Nama bagian berhasil diperbarui.')
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus('idle'), 2000)
     }
-    setSavingSection(false)
+  }
+
+  function handleFinishEditSection(e: FormEvent) {
+    e.preventDefault()
+    setEditingSectionId(null)
   }
 
   // ── Hapus section ──────────────────────────────────────────────────────────
@@ -317,7 +329,6 @@ export default function EditSurveyPage() {
     const targetIdx = direction === 'up' ? idx - 1 : idx + 1
     if (targetIdx < 0 || targetIdx >= realSections.length) return
 
-    // Tukar order_index antara dua section
     const current = realSections[idx]
     const target = realSections[targetIdx]
 
@@ -367,7 +378,6 @@ export default function EditSurveyPage() {
       return
     }
 
-    // Hitung order_index berikutnya dalam section ini
     const sectionData = sections.find((s) => s.id === sectionId)
     const nextOrder = sectionData?.questions.length ?? 0
 
@@ -418,27 +428,20 @@ export default function EditSurveyPage() {
     })
   }
 
-  /**
-   * Saat admin mengubah tipe pertanyaan, cek apakah pertanyaan ini sudah
-   * punya jawaban di DB. Jika ya, tampilkan peringatan terlebih dahulu.
-   */
   async function handleTypeChange(questionId: string, newType: QuestionType) {
     if (!editingQuestion || editingQuestion.questionId !== questionId) return
 
     const currentType = editingQuestion.type
     if (currentType === newType) return
 
-    // Cek apakah ada jawaban untuk pertanyaan ini
     const { count } = await supabase
       .from('answers')
       .select('id', { count: 'exact', head: true })
       .eq('question_id', questionId)
 
     if ((count ?? 0) > 0) {
-      // Ada data — tampilkan peringatan
       setTypeChangeWarning({ questionId, newType })
     } else {
-      // Tidak ada data — langsung ubah
       setEditingQuestion((prev) =>
         prev ? { ...prev, type: newType, optionsText: '' } : prev,
       )
@@ -453,28 +456,47 @@ export default function EditSurveyPage() {
     setTypeChangeWarning(null)
   }
 
-  async function handleSaveQuestion(e: FormEvent) {
-    e.preventDefault()
-    if (!editingQuestion) return
+  // ── Autosave Edit Pertanyaan ───────────────────────────────────────────────
+  const debouncedEditingQuestion = useDebounce(editingQuestion, 1000)
 
-    const { questionId, text, type, required, optionsText } = editingQuestion
-    const trimmedText = text.trim()
-
-    if (!trimmedText) {
-      toast.error('Teks pertanyaan wajib diisi.')
-      return
+  useEffect(() => {
+    if (debouncedEditingQuestion) {
+      let original: QuestionRow | undefined
+      for (const s of sections) {
+        const found = s.questions.find(q => q.id === debouncedEditingQuestion.questionId)
+        if (found) {
+          original = found
+          break
+        }
+      }
+      
+      if (original) {
+        const isChoiceType = CHOICE_TYPES.includes(debouncedEditingQuestion.type)
+        const oldOptionsText = optionsToString(original.options)
+        
+        if (
+          original.question_text !== debouncedEditingQuestion.text ||
+          original.question_type !== debouncedEditingQuestion.type ||
+          original.is_required !== debouncedEditingQuestion.required ||
+          (isChoiceType && oldOptionsText !== debouncedEditingQuestion.optionsText)
+        ) {
+          void saveQuestionAuto(debouncedEditingQuestion)
+        }
+      }
     }
+  }, [debouncedEditingQuestion])
 
-    const isChoiceType = CHOICE_TYPES.includes(type)
-    const options = isChoiceType ? stringToOptions(optionsText) : null
+  async function saveQuestionAuto(editedQ: EditQuestionState) {
+    const trimmedText = editedQ.text.trim()
+    if (!trimmedText) return
 
-    if (isChoiceType && (!options || options.length === 0)) {
-      toast.error('Wajib mengisi minimal satu pilihan.')
-      return
-    }
+    const isChoiceType = CHOICE_TYPES.includes(editedQ.type)
+    const options = isChoiceType ? stringToOptions(editedQ.optionsText) : null
+    
+    if (isChoiceType && (!options || options.length === 0)) return
 
     const branchingLogic =
-      type === 'dual_likert'
+      editedQ.type === 'dual_likert'
         ? {
             show_reason_if: {
               field: 'score_performance',
@@ -485,26 +507,47 @@ export default function EditSurveyPage() {
           }
         : null
 
-    setSavingQuestion(true)
+    setSaveStatus('saving')
     const { error: updateError } = await supabase
       .from('questions')
       .update({
         question_text: trimmedText,
-        question_type: type,
-        is_required: required,
+        question_type: editedQ.type,
+        is_required: editedQ.required,
         options: options,
         branching_logic: branchingLogic,
       })
-      .eq('id', questionId)
+      .eq('id', editedQ.questionId)
 
     if (updateError) {
+      setSaveStatus('error')
       toast.error(updateError.message)
     } else {
-      setEditingQuestion(null)
-      toast.success('Pertanyaan berhasil diperbarui.')
-      await loadData()
+      setSections((prev) =>
+        prev.map((s) => ({
+          ...s,
+          questions: s.questions.map((q) =>
+            q.id === editedQ.questionId
+              ? {
+                  ...q,
+                  question_text: trimmedText,
+                  question_type: editedQ.type,
+                  is_required: editedQ.required,
+                  options: options,
+                  branching_logic: branchingLogic,
+                }
+              : q,
+          ),
+        })),
+      )
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus('idle'), 2000)
     }
-    setSavingQuestion(false)
+  }
+
+  function handleFinishEditQuestion(e: FormEvent) {
+    e.preventDefault()
+    setEditingQuestion(null)
   }
 
   // ── Hapus pertanyaan ───────────────────────────────────────────────────────
@@ -599,13 +642,26 @@ export default function EditSurveyPage() {
             Kembali ke Daftar Survei
           </Link>
 
-          <p className="mt-3 text-sm font-semibold uppercase tracking-[0.22em] text-oren">
-            Edit Survei
-          </p>
+          <div className="flex items-center gap-4 mt-3">
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-oren">
+              Edit Survei
+            </p>
+            {/* Status Autosave */}
+            <span className={`text-xs font-semibold px-2.5 py-1 rounded-xl transition-opacity ${
+              saveStatus === 'saving' ? 'bg-amber-100 text-amber-800 opacity-100' :
+              saveStatus === 'saved' ? 'bg-emerald-100 text-emerald-800 opacity-100' :
+              saveStatus === 'error' ? 'bg-red-100 text-red-800 opacity-100' :
+              'opacity-0'
+            }`}>
+              {saveStatus === 'saving' ? 'Menyimpan...' : 
+               saveStatus === 'saved' ? 'Semua perubahan tersimpan' : 
+               saveStatus === 'error' ? 'Gagal menyimpan' : ''}
+            </span>
+          </div>
 
           {/* Judul survei — bisa diedit langsung */}
           {isEditingTitle ? (
-            <form onSubmit={(e) => void handleSaveTitle(e)} className="mt-2 flex items-center gap-3">
+            <div className="mt-2 flex items-center gap-3">
               <input
                 type="text"
                 value={titleDraft}
@@ -614,24 +670,14 @@ export default function EditSurveyPage() {
                 autoFocus
               />
               <button
-                type="submit"
-                disabled={savingTitle}
-                className="inline-flex items-center gap-2 rounded-xl bg-oren-muda px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 active:scale-95 disabled:opacity-60"
+                type="button"
+                onClick={() => setIsEditingTitle(false)}
+                className="inline-flex items-center gap-2 rounded-xl bg-oren-muda px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 active:scale-95"
               >
                 <Save size={15} />
-                {savingTitle ? 'Menyimpan...' : 'Simpan'}
+                Selesai
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsEditingTitle(false)
-                  setTitleDraft(survey.title)
-                }}
-                className="rounded-xl border border-light-grey bg-white p-2.5 text-ash/60 transition hover:bg-light-grey/50"
-              >
-                <X size={15} />
-              </button>
-            </form>
+            </div>
           ) : (
             <div className="mt-2 flex items-center gap-3">
               <h1 className="text-2xl font-semibold tracking-tight text-ash sm:text-3xl">
@@ -647,34 +693,23 @@ export default function EditSurveyPage() {
               </button>
             </div>
           )}
-
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <span
-              className={`rounded-xl px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${
-                survey.is_active
-                  ? 'bg-emerald-50 text-emerald-700'
-                  : 'border border-light-grey bg-white text-ash/60'
-              }`}
-            >
-              {survey.is_active ? 'Aktif' : 'Nonaktif'}
-            </span>
-            <span className="text-xs text-ash/40">
-              {sections.filter((s) => s.id !== '__orphan__').length} bagian
-              {' · '}
-              {sections.reduce((acc, s) => acc + s.questions.length, 0)} pertanyaan
-            </span>
-          </div>
         </div>
 
-        {/* Tombol tambah section */}
-        <button
-          type="button"
-          onClick={() => setIsAddingSectionOpen(true)}
-          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-oren-muda px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 active:scale-95"
-        >
-          <Plus size={16} />
-          Tambah Bagian
-        </button>
+        <div className="flex shrink-0 gap-3">
+          <Link
+            to={`/survey/${survey.id}?preview=true`}
+            target="_blank"
+            className="inline-flex items-center gap-2 rounded-xl border border-light-grey bg-white px-5 py-3 text-sm font-semibold text-ash/80 transition hover:bg-light-grey/50"
+          >
+            Preview Survei
+          </Link>
+          <Link
+            to="/admin/surveys"
+            className="inline-flex h-[48px] cursor-pointer items-center justify-center rounded-xl bg-navy px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95"
+          >
+            Selesai Edit
+          </Link>
+        </div>
       </div>
 
       {/* ── Form tambah section baru ── */}
@@ -734,7 +769,6 @@ export default function EditSurveyPage() {
               >
                 {/* Section header */}
                 <div className="flex items-center gap-3 border-b border-light-grey bg-[#F5F3EE] px-5 py-4">
-                  {/* Tombol urutan section */}
                   {!isOrphan && (
                     <div className="flex flex-col gap-1">
                       <button
@@ -758,33 +792,25 @@ export default function EditSurveyPage() {
                     </div>
                   )}
 
-                  {/* Judul section — bisa diedit */}
                   <div className="flex-1 min-w-0">
                     {isEditingThisSection && !isOrphan ? (
                       <form
-                        onSubmit={(e) => void handleSaveSection(e)}
-                        className="flex items-center gap-3"
+                        onSubmit={(e) => void handleFinishEditSection(e)}
+                        className="flex flex-1 items-center gap-3"
                       >
                         <input
                           type="text"
                           value={editingSectionTitle}
                           onChange={(e) => setEditingSectionTitle(e.target.value)}
-                          className="flex-1 rounded-xl border border-light-grey bg-white px-3 py-1.5 text-sm font-semibold text-ash outline-none focus:border-oren focus:ring-2 focus:ring-oren/10"
+                          className="w-full max-w-sm rounded-xl border border-light-grey bg-white px-3 py-2 text-sm font-semibold text-ash outline-none transition focus:border-oren focus:ring-4 focus:ring-oren/10"
                           autoFocus
                         />
                         <button
                           type="submit"
-                          disabled={savingSection}
-                          className="rounded-lg bg-oren-muda px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110 disabled:opacity-60"
+                          className="inline-flex items-center gap-2 rounded-xl bg-oren-muda px-3 py-2 text-xs font-semibold text-white transition hover:brightness-110 active:scale-95"
                         >
-                          {savingSection ? '...' : 'Simpan'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingSectionId(null)}
-                          className="rounded-lg border border-light-grey bg-white p-1.5 text-ash/60 transition hover:bg-light-grey/50"
-                        >
-                          <X size={13} />
+                          <Save size={14} />
+                          Selesai
                         </button>
                       </form>
                     ) : (
@@ -795,14 +821,10 @@ export default function EditSurveyPage() {
                         <h2 className="text-base font-semibold tracking-tight text-ash">
                           {section.title}
                         </h2>
-                        <span className="ml-1 rounded-xl bg-butter/40 px-2 py-0.5 text-xs font-semibold text-ash/60">
-                          {section.questions.length} pertanyaan
-                        </span>
                       </div>
                     )}
                   </div>
 
-                  {/* Aksi section */}
                   {!isOrphan && !isEditingThisSection && (
                     <div className="flex items-center gap-2">
                       <button
@@ -826,121 +848,33 @@ export default function EditSurveyPage() {
                   )}
                 </div>
 
-                {/* Daftar pertanyaan dalam section */}
+                {/* Daftar pertanyaan */}
                 <div className="divide-y divide-light-grey">
-                  {section.questions.length === 0 && (
-                    <p className="px-5 py-4 text-sm text-ash/50 italic">
-                      Belum ada pertanyaan di bagian ini.
-                    </p>
-                  )}
-
                   {section.questions.map((question, qIdx) => {
-                    const isEditingThis =
-                      editingQuestion?.questionId === question.id
-                    const isFirstQ = qIdx === 0
-                    const isLastQ = qIdx === section.questions.length - 1
-
+                    const isEditingThis = editingQuestion?.questionId === question.id
+                    
                     return (
                       <div key={question.id} className="px-5 py-4">
                         {isEditingThis ? (
-                          /* ── Form edit pertanyaan ── */
-                          <form
-                            onSubmit={(e) => void handleSaveQuestion(e)}
-                            className="space-y-4"
-                          >
+                          <form onSubmit={(e) => void handleFinishEditQuestion(e)} className="space-y-4">
                             <div className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr_0.5fr]">
-                              {/* Teks pertanyaan */}
-                              <label className="block text-sm font-medium text-ash">
-                                Teks Pertanyaan
-                                <input
-                                  type="text"
-                                  value={editingQuestion.text}
-                                  onChange={(e) =>
-                                    setEditingQuestion((prev) =>
-                                      prev ? { ...prev, text: e.target.value } : prev,
-                                    )
-                                  }
-                                  className="mt-2 w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10"
-                                />
-                              </label>
-
-                              {/* Tipe pertanyaan */}
-                              <label className="block text-sm font-medium text-ash">
-                                Tipe Pertanyaan
-                                <select
-                                  value={editingQuestion.type}
-                                  onChange={(e) =>
-                                    void handleTypeChange(
-                                      question.id,
-                                      e.target.value as QuestionType,
-                                    )
-                                  }
-                                  className="mt-2 w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10"
-                                >
-                                  {(Object.keys(QUESTION_TYPE_LABELS) as QuestionType[]).map(
-                                    (type) => (
-                                      <option key={type} value={type}>
-                                        {QUESTION_TYPE_LABELS[type]}
-                                      </option>
-                                    ),
-                                  )}
-                                </select>
-                              </label>
-
-                              {/* Wajib diisi */}
-                              <div className="flex flex-col justify-end">
-                                <label className="flex cursor-pointer select-none items-center gap-3 rounded-xl border border-light-grey bg-white px-4 py-3 text-sm font-medium text-ash h-[48px]">
-                                  <input
-                                    type="checkbox"
-                                    checked={editingQuestion.required}
-                                    onChange={(e) =>
-                                      setEditingQuestion((prev) =>
-                                        prev ? { ...prev, required: e.target.checked } : prev,
-                                      )
-                                    }
-                                    className="h-4 w-4 rounded border-light-grey text-navy"
-                                  />
-                                  Wajib
-                                </label>
-                              </div>
-                            </div>
-
-                            {/* Pilihan jawaban (hanya untuk tipe choice) */}
-                            {CHOICE_TYPES.includes(editingQuestion.type) && (
-                              <label className="block text-sm font-medium text-ash">
-                                Pilihan Jawaban{' '}
-                                <span className="text-ash/50">(pisahkan dengan koma)</span>
-                                <input
-                                  type="text"
-                                  value={editingQuestion.optionsText}
-                                  onChange={(e) =>
-                                    setEditingQuestion((prev) =>
-                                      prev ? { ...prev, optionsText: e.target.value } : prev,
-                                    )
-                                  }
-                                  placeholder="Contoh: Sangat Puas, Cukup Puas, Tidak Puas"
-                                  className="mt-2 w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10"
-                                />
-                              </label>
-                            )}
-
-                            {/* Tombol aksi */}
-                            <div className="flex items-center gap-3">
-                              <button
-                                type="submit"
-                                disabled={savingQuestion}
-                                className="inline-flex items-center gap-2 rounded-xl bg-navy px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 active:scale-95 disabled:opacity-60"
+                              <input
+                                type="text"
+                                value={editingQuestion.text}
+                                onChange={(e) => setEditingQuestion((prev) => prev ? { ...prev, text: e.target.value } : prev)}
+                                className="w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10"
+                              />
+                              <select
+                                value={editingQuestion.type}
+                                onChange={(e) => void handleTypeChange(question.id, e.target.value as QuestionType)}
+                                className="w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10"
                               >
-                                <Save size={14} />
-                                {savingQuestion ? 'Menyimpan...' : 'Simpan Perubahan'}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setEditingQuestion(null)}
-                                className="inline-flex items-center gap-2 rounded-xl border border-light-grey bg-white px-5 py-2.5 text-sm font-semibold text-ash/70 transition hover:bg-light-grey/50"
-                              >
-                                <X size={14} />
-                                Batal
+                                {(Object.keys(QUESTION_TYPE_LABELS) as QuestionType[]).map((type) => (
+                                  <option key={type} value={type}>{QUESTION_TYPE_LABELS[type]}</option>
+                                ))}
+                              </select>
+                              <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-oren-muda px-4 text-xs font-semibold text-white transition hover:brightness-110 active:scale-95">
+                                <Save size={14} /> Selesai
                               </button>
                             </div>
                           </form>
@@ -951,7 +885,7 @@ export default function EditSurveyPage() {
                             <div className="flex flex-col gap-1 pt-0.5">
                               <button
                                 type="button"
-                                disabled={isFirstQ}
+                                disabled={qIdx === 0}
                                 onClick={() =>
                                   void moveQuestionOrder(section.id, question.id, 'up')
                                 }
@@ -962,7 +896,7 @@ export default function EditSurveyPage() {
                               </button>
                               <button
                                 type="button"
-                                disabled={isLastQ}
+                                disabled={qIdx === section.questions.length - 1}
                                 onClick={() =>
                                   void moveQuestionOrder(section.id, question.id, 'down')
                                 }
@@ -1030,50 +964,33 @@ export default function EditSurveyPage() {
                 {!isOrphan && (
                   <div className="border-t border-light-grey bg-[#FAFAF8] px-5 py-3">
                     {addingQuestion?.sectionId === section.id ? (
-                      <form
-                        onSubmit={(e) => void handleCreateQuestion(e)}
-                        className="space-y-4"
-                      >
-                        <div className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr_0.5fr_auto]">
-                          <label className="block text-sm font-medium text-ash">
-                            Teks Pertanyaan
-                            <input
-                              type="text"
-                              value={addingQuestion.text}
-                              onChange={(e) =>
-                                setAddingQuestion((prev) =>
-                                  prev ? { ...prev, text: e.target.value } : prev,
-                                )
-                              }
-                              placeholder="Contoh: Bagaimana penilaian Anda terhadap layanan ini?"
-                              className="mt-2 w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10"
-                              autoFocus
-                            />
-                          </label>
-                          <label className="block text-sm font-medium text-ash">
-                            Tipe
+                      <form onSubmit={(e) => void handleCreateQuestion(e)} className="space-y-3">
+                        <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
+                          <input
+                            type="text"
+                            value={addingQuestion.text}
+                            onChange={(e) =>
+                              setAddingQuestion((prev) =>
+                                prev ? { ...prev, text: e.target.value } : prev,
+                              )
+                            }
+                            placeholder="Teks pertanyaan baru..."
+                            className="w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10 h-[48px]"
+                            autoFocus
+                          />
+                          <label className="block">
                             <select
                               value={addingQuestion.type}
                               onChange={(e) =>
                                 setAddingQuestion((prev) =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        type: e.target.value as QuestionType,
-                                        optionsText: '',
-                                      }
-                                    : prev,
+                                  prev ? { ...prev, type: e.target.value as QuestionType } : prev,
                                 )
                               }
-                              className="mt-2 w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10"
+                              className="h-[48px] rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10"
                             >
-                              {(Object.keys(QUESTION_TYPE_LABELS) as QuestionType[]).map(
-                                (type) => (
-                                  <option key={type} value={type}>
-                                    {QUESTION_TYPE_LABELS[type]}
-                                  </option>
-                                ),
-                              )}
+                              {(Object.keys(QUESTION_TYPE_LABELS) as QuestionType[]).map((type) => (
+                                <option key={type} value={type}>{QUESTION_TYPE_LABELS[type]}</option>
+                              ))}
                             </select>
                           </label>
                           <div className="flex items-end">
@@ -1143,6 +1060,18 @@ export default function EditSurveyPage() {
             )
           })}
         </div>
+      )}
+
+      {/* ── Tombol Tambah Bagian Baru ── */}
+      {!isAddingSectionOpen && (
+        <button
+          type="button"
+          onClick={() => setIsAddingSectionOpen(true)}
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-light-grey bg-white px-6 py-4 text-sm font-semibold text-ash/60 transition hover:border-oren hover:bg-oren/5 hover:text-oren"
+        >
+          <Plus size={16} />
+          Tambah Bagian Baru
+        </button>
       )}
 
       {/* ── Modal konfirmasi hapus section ── */}

@@ -1,43 +1,48 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { BarChart2, AlertOctagon, ClipboardList, Users, LogOut, UserCircle2 } from 'lucide-react'
+import { BarChart2, AlertOctagon, ClipboardList, Users, LogOut, UserCircle2, Globe } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { useTranslation } from 'react-i18next'
 
 const adminData = {
   name: 'Admin LPDP',
   email: 'adminlpdp@gmail.com',
 }
 
-// Urutan menu: fitur utama di atas, Manajemen Pengguna di paling bawah
-const menuItems = [
-  {
-    name: 'Analitik',
-    path: '/admin',
-    icon: BarChart2,
-  },
-  {
-    name: 'Umpan Balik Kritis',
-    path: '/admin/critical-feedback',
-    icon: AlertOctagon,
-  },
-  {
-    name: 'Kelola Survei',
-    path: '/admin/surveys',
-    icon: ClipboardList,
-  },
-  // Manajemen Pengguna dipindah ke posisi paling bawah sesuai permintaan
-  {
-    name: 'Manajemen Pengguna',
-    path: '/admin/respondents',
-    icon: Users,
-  },
-]
-
 const AdminSidebar = () => {
   const navigate = useNavigate()
+  const { t, i18n } = useTranslation()
+
+  const menuItems = [
+    {
+      name: t('sidebar.analytics', 'Analitik'),
+      path: '/admin',
+      icon: BarChart2,
+    },
+    {
+      name: t('sidebar.critical_feedback', 'Umpan Balik Kritis'),
+      path: '/admin/critical-feedback',
+      icon: AlertOctagon,
+    },
+    {
+      name: t('sidebar.manage_surveys', 'Kelola Survei'),
+      path: '/admin/surveys',
+      icon: ClipboardList,
+    },
+    {
+      name: t('sidebar.manage_users', 'Manajemen Pengguna'),
+      path: '/admin/respondents',
+      icon: Users,
+    },
+  ]
 
   async function handleLogout() {
     await supabase.auth.signOut()
     navigate('/login', { replace: true })
+  }
+
+  function toggleLanguage() {
+    const newLang = i18n.language === 'id' ? 'en' : 'id'
+    void i18n.changeLanguage(newLang)
   }
 
   return (
@@ -95,6 +100,16 @@ const AdminSidebar = () => {
           </div>
         </div>
 
+        {/* Language Toggle */}
+        <button
+          type="button"
+          onClick={toggleLanguage}
+          className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-light-grey/20 px-5 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-light-grey/10"
+        >
+          <Globe size={15} />
+          <span>{i18n.language === 'id' ? 'English' : 'Indonesia'}</span>
+        </button>
+
         {/* Logout Button */}
         <button
           type="button"
@@ -102,7 +117,7 @@ const AdminSidebar = () => {
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-oren-muda px-5 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-[#C9683B]"
         >
           <LogOut size={15} />
-          <span>Keluar</span>
+          <span>{t('sidebar.logout', 'Keluar')}</span>
         </button>
       </div>
     </aside>

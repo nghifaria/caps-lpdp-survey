@@ -110,7 +110,7 @@ const HomePage = () => {
     <div className="flex min-h-screen flex-col">
       {/* Hero Section */}
       <section
-        className="relative flex min-h-screen items-end justify-center bg-cover bg-center bg-no-repeat px-5 pb-20 animate-fade-in"
+        className="relative flex h-[60vh] min-h-[450px] items-end justify-center bg-cover bg-center bg-no-repeat px-5 pb-12 animate-fade-in"
         style={{ backgroundImage: `url(/hero_bg.png)` }}
       >
         <div className="absolute inset-0 bg-[#09111f]/42" />
