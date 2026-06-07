@@ -186,19 +186,23 @@ function DashboardPage() {
   async function loadSurveys() {
     setSurveysLoading(true)
     setSurveysError(null)
-    const { data, error: surveyListError } = await supabase
-      .from('surveys')
-      .select('id, title, is_active, created_at')
-      .order('created_at', { ascending: false })
 
-    if (surveyListError) {
-      setSurveysError(surveyListError.message)
-      setSurveys([])
-    } else {
+    try {
+      const { data, error: surveyListError } = await supabase
+        .from('surveys')
+        .select('id, title, is_active, created_at')
+        .order('created_at', { ascending: false })
+
+      if (surveyListError) {
+        setSurveysError(surveyListError.message)
+        setSurveys([])
+        return
+      }
+
       setSurveys((data ?? []) as SurveyRow[])
+    } finally {
+      setSurveysLoading(false)
     }
-
-    setSurveysLoading(false)
   }
 
   async function loadQuestions(surveyId: string) {
@@ -248,94 +252,93 @@ function DashboardPage() {
       setLoading(true)
       setError(null)
 
-      const { data: authData, error: authError } = await supabase.auth.getUser()
-      const user = authData.user
+      try {
+        const { data: authData, error: authError } = await supabase.auth.getUser()
+        const user = authData.user
 
-      if (authError || !user) {
-        if (!cancelled) {
-          setError(authError?.message ?? 'User belum login.')
-          setLoading(false)
-          setUsersLoading(false)
+        if (authError || !user) {
+          if (!cancelled) {
+            setError(authError?.message ?? 'User belum login.')
+            setUsersLoading(false)
+          }
+          return
         }
-        return
-      }
 
-      if (!cancelled) {
-        setCurrentUserId(user.id)
-      }
-
-      const { data: profileData, error: profileError } = (await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle()) as {
-        data: { role: UserRole } | null
-        error: { message: string } | null
-      }
-
-      if (profileError) {
         if (!cancelled) {
-          setError(profileError.message)
-          setLoading(false)
-          setUsersLoading(false)
+          setCurrentUserId(user.id)
         }
-        return
-      }
 
-      if (profileData?.role !== 'admin') {
-        toast.error('Akses admin diperlukan.')
-        navigate('/', { replace: true })
-        return
-      }
-
-      void loadUsers()
-
-      // Load surveys list directly inside loadDashboard for robust selection
-      const { data: surveysData, error: surveysListError } = await supabase
-        .from('surveys')
-        .select('id, title, is_active, created_at')
-        .order('created_at', { ascending: false })
-
-      if (surveysListError) {
-        if (!cancelled) {
-          setSurveysError(surveysListError.message)
+        const { data: profileData, error: profileError } = (await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle()) as {
+          data: { role: UserRole } | null
+          error: { message: string } | null
         }
-      } else if (surveysData && !cancelled) {
-        setSurveys(surveysData as SurveyRow[])
-      }
 
-      const surveyRows = (surveysData ?? []) as SurveyRow[]
+        if (profileError) {
+          if (!cancelled) {
+            setError(profileError.message)
+            setUsersLoading(false)
+          }
+          return
+        }
 
-      let resolvedSurvey: SurveyRow | null = null
-      if (surveyRows.length > 0) {
+        if (profileData?.role !== 'admin') {
+          toast.error('Akses admin diperlukan.')
+          navigate('/', { replace: true })
+          return
+        }
+
+        void loadUsers()
+        void loadSurveys()
+
+        const { data: surveysData, error: surveysListError } = await supabase
+          .from('surveys')
+          .select('id, title, is_active, created_at')
+          .order('created_at', { ascending: false })
+
+        const surveyRows = (surveysData ?? []) as SurveyRow[]
+
+        if (surveysListError) {
+          if (!cancelled) {
+            setSurveysError(surveysListError.message)
+          }
+        } else if (!cancelled) {
+          setSurveys(surveyRows)
+        }
+
         const seed = surveyRows.find((s: SurveyRow) => s.title === 'Survei Kepuasan Layanan LPDP 2026')
-        resolvedSurvey = seed || surveyRows[0]
-      }
+        const resolvedSurvey = seed || surveyRows[0] || null
 
-      if (!resolvedSurvey) {
+        if (!resolvedSurvey) {
+          if (!cancelled) {
+            setError('Belum ada kuesioner terdaftar di database.')
+          }
+          return
+        }
+
+        const responsesResult = await supabase
+          .from('responses')
+          .select(
+            'id, survey_id, submitted_at, answers(id, response_id, question_id, text_value, score_performance, score_importance, reason, questions(id, question_text, question_type))',
+          )
+          .eq('survey_id', resolvedSurvey.id)
+          .order('submitted_at', { ascending: false })
+
         if (!cancelled) {
-          setError('Belum ada kuesioner terdaftar di database.')
+          if (responsesResult.error) {
+            setError(responsesResult.error.message)
+          } else {
+            setSurvey(resolvedSurvey)
+            setResponses((responsesResult.data ?? []) as ResponseWithAnswers[])
+          }
+        }
+      } finally {
+        if (!cancelled) {
           setLoading(false)
         }
-        return
-      }
-
-      const responsesResult = await supabase
-        .from('responses')
-        .select(
-          'id, survey_id, submitted_at, answers(id, response_id, question_id, text_value, score_performance, score_importance, reason, questions(id, question_text, question_type))',
-        )
-        .eq('survey_id', resolvedSurvey.id)
-        .order('submitted_at', { ascending: false })
-
-      if (!cancelled) {
-        if (responsesResult.error) {
-          setError(responsesResult.error.message)
-        } else {
-          setSurvey(resolvedSurvey)
-          setResponses((responsesResult.data ?? []) as ResponseWithAnswers[])
-        }
-        setLoading(false)
       }
     }
 
@@ -344,7 +347,7 @@ function DashboardPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [navigate])
 
   async function handleSurveyChange(surveyId: string) {
     const selected = surveys.find((s) => s.id === surveyId)
