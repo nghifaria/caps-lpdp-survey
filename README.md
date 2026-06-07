@@ -1,73 +1,73 @@
-# React + TypeScript + Vite
+# Sistem Survei Beasiswa LPDP
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplikasi web komprehensif untuk mengelola dan mengisi survei/kuesioner kepuasan layanan beasiswa LPDP. Proyek ini dibangun menggunakan tumpukan teknologi modern dengan fokus pada performa, skalabilitas, dan kenyamanan pengguna (UX).
 
-Currently, two official plugins are available:
+## 🚀 Fitur Utama
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### 👑 Untuk Admin
+* **Dashboard Terpusat**: Ringkasan data partisipasi, jumlah responden, dan analitik kuadran (*Importance-Performance Analysis*).
+* **Manajemen Survei (CRUD)**: Buat, edit, aktifkan, arsipkan, hingga hapus permanen survei.
+* **Duplikat Survei**: Fitur untuk menyalin seluruh struktur survei (bagian, pertanyaan, dan pilihan) tanpa menyalin respons.
+* **Editor Kuesioner Interaktif**:
+  * Pengelompokan pertanyaan berdasarkan Bagian (*Sections*).
+  * *Autosave* (Simpan Otomatis) saat mengetik.
+  * Penyusunan urutan (*sorting*) pertanyaan dan bagian menggunakan tombol praktis (↑/↓).
+  * Dukungan berbagai tipe pertanyaan (Matriks IPA, Isian Bebas, Pilihan Ganda, Checkbox, Dropdown, dll).
+* **Multi-Bahasa (i18n)**: Toggle bahasa Indonesia / English pada antarmuka *dashboard* (Sidebar).
+* **Preview Mode**: Admin dapat menguji pengisian survei tanpa menyimpan data ke database.
+* **Ekspor Data**: Mendukung ekspor respons ke format CSV.
 
-## React Compiler
+### 👥 Untuk Responden (Awardee)
+* **Survey Hub**: Halaman beranda yang menampilkan daftar survei aktif yang harus diisi.
+* **Pengisian Multi-Step**: Formulir dibagi per bagian (*section-by-section*) agar tidak membebani responden.
+* **Integrasi Profil Otomatis**: Beberapa pertanyaan spesifik (seperti Nama, Provinsi, Universitas) akan terisi otomatis mengambil dari data profil pengguna.
+* **Aman & Nyaman**: Antarmuka responsif yang bersih (*clean UI*), dilengkapi petunjuk (*guideline*) dan tanya jawab (*FAQ*).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Stack Teknologi
 
-## Expanding the ESLint configuration
+* **Frontend**: [React 18](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+* **Build Tool**: [Vite](https://vitejs.dev/)
+* **Routing**: [React Router DOM v6](https://reactrouter.com/)
+* **Styling**: [Tailwind CSS v3](https://tailwindcss.com/)
+* **Database & Auth**: [Supabase](https://supabase.com/) (PostgreSQL)
+* **Icons**: [Lucide React](https://lucide.dev/)
+* **Toasts/Notifikasi**: [Sonner](https://sonner.emilkowal.ski/)
+* **Internationalization**: [i18next](https://www.i18next.com/) & `react-i18next`
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 📦 Cara Instalasi & Menjalankan Lokal
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+1. **Clone repositori**
+   ```bash
+   git clone https://github.com/nghifaria/caps-lpdp-survey.git
+   cd caps-lpdp-survey
+   ```
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+2. **Install dependensi**
+   ```bash
+   npm install
+   ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+3. **Konfigurasi Environment Variable**
+   Buat file `.env` di *root directory* dan tambahkan *credentials* Supabase Anda:
+   ```env
+   VITE_SUPABASE_URL=your_supabase_project_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+4. **Jalankan Server Development**
+   ```bash
+   npm run dev
+   ```
+   Aplikasi dapat diakses melalui `http://localhost:5173`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🗄️ Struktur Database Utama
+Aplikasi ini memiliki beberapa entitas utama di PostgreSQL (Supabase):
+* `profiles`: Data pengguna (Admin & Awardee).
+* `surveys`: Entitas induk kuesioner.
+* `sections`: Bagian/pengelompokan dalam survei.
+* `questions`: Data spesifik pertanyaan yang menempel pada *section*.
+* `responses`: Sesi respons survei yang di-submit.
+* `answers`: Jawaban spesifik untuk masing-masing `questions`.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 📄 Lisensi
+Proyek ini dikembangkan secara spesifik untuk keperluan Survei Layanan Beasiswa LPDP.
