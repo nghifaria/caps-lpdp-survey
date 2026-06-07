@@ -160,18 +160,28 @@ function DashboardPage() {
   const [deletingQuestionId, setDeletingQuestionId] = useState<string | null>(null)
   const [newQuestionOptionsText, setNewQuestionOptionsText] = useState('')
 
+  const tabFromPathname = useMemo(() => {
+    if (location.pathname === '/admin/surveys') {
+      return 'manage-surveys' as const
+    }
+
+    if (location.pathname === '/admin/respondents') {
+      return 'users' as const
+    }
+
+    if (location.pathname === '/admin/critical-feedback') {
+      return 'critical-feedback' as const
+    }
+
+    return 'analytics' as const
+  }, [location.pathname])
+
   // Map sub-routes to active tabs
   useEffect(() => {
-    if (location.pathname === '/admin/surveys') {
-      setActiveTab('manage-surveys')
-    } else if (location.pathname === '/admin/respondents') {
-      setActiveTab('users')
-    } else if (location.pathname === '/admin/critical-feedback') {
-      setActiveTab('critical-feedback')
-    } else {
-      setActiveTab('analytics')
+    if (activeTab !== tabFromPathname) {
+      setActiveTab(tabFromPathname)
     }
-  }, [location.pathname])
+  }, [activeTab, tabFromPathname])
 
   async function loadSurveys() {
     setSurveysLoading(true)
