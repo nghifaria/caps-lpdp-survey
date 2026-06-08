@@ -18,6 +18,8 @@ import {
 import { ArchiveX, ExternalLink, Plus, Search, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
+import RawDataTable from '../../components/admin/RawDataTable'
+import ScholarsTable from '../../components/admin/ScholarsTable'
 import { supabase } from '../../lib/supabase'
 import type { Database, SurveyWithCount } from '../../types/database'
 import { toast } from 'sonner'
@@ -1731,141 +1733,23 @@ function DashboardPage() {
           ) : null}
 
           {activeTab === 'analytics' ? (
-            <>
-              <div className="mt-8 space-y-6 print:hidden">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-lg font-semibold tracking-tight text-ash">Raw Data</h2>
-                    <p className="mt-1 text-sm text-ash/80">
-                      Jawaban mentah untuk analisis lanjutan atau ekspor CSV.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-3 print:hidden">
-                    <button
-                      type="button"
-                      onClick={exportCsv}
-                      className="inline-flex items-center justify-center rounded-xl bg-oren px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 cursor-pointer"
-                    >
-                      Export CSV
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handlePrintReport}
-                      className="inline-flex items-center justify-center rounded-xl bg-navy px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 cursor-pointer"
-                    >
-                      Cetak Laporan PDF
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mt-5 overflow-hidden rounded-xl border border-[#E7E4DC] bg-white shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-[#E7E4DC] text-left text-sm">
-                      <thead className="bg-[#E7E4DC]/55 text-xs uppercase tracking-[0.16em] text-ash/70">
-                        <tr>
-                          <th className="px-4 py-3">Response ID</th>
-                          <th className="px-4 py-3">Submitted At</th>
-                          <th className="px-4 py-3">Question</th>
-                          <th className="px-4 py-3">Performance</th>
-                          <th className="px-4 py-3">Importance</th>
-                          <th className="px-4 py-3">Reason</th>
-                          <th className="px-4 py-3">Quadrant</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#E7E4DC]">
-                        {csvRows.map((row) => (
-                          <tr key={`${row.response_id}-${row.question_text}`} className="hover:bg-[#fff9eb]/50 transition-colors duration-200">
-                            <td className="px-4 py-3 text-ash/80">{row.response_id}</td>
-                            <td className="px-4 py-3 text-ash/80">{row.submitted_at}</td>
-                            <td className="px-4 py-3 font-medium text-ash">{row.question_text}</td>
-                            <td className="px-4 py-3 text-ash/80">{row.performance}</td>
-                            <td className="px-4 py-3 text-ash/80">{row.importance}</td>
-                            <td className="px-4 py-3 text-ash/80">{row.reason || '-'}</td>
-                            <td className="px-4 py-3 text-ash/80">
-                              {quadrantMap.get(row.question_id) ?? '-'}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </>
+            <RawDataTable
+              csvRows={csvRows}
+              quadrantMap={quadrantMap}
+              exportCsv={exportCsv}
+              handlePrintReport={handlePrintReport}
+            />
           ) : null}
 
           {activeTab === 'users' ? (
-            <div className="space-y-6 print:hidden">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.22em] text-oren">
-                    Daftar Pengguna
-                  </p>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ash">
-                    Manajemen Pengguna
-                  </h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-ash/80">
-                    Kelola peran pengguna tanpa akses manual ke database.
-                  </p>
-                </div>
-              </div>
-
-              {usersLoading ? (
-                <div className="mt-5">
-                  <LoadingSpinner />
-                </div>
-              ) : usersError ? (
-                <p className="mt-5 text-sm text-red-600">{usersError}</p>
-              ) : (
-                <div className="mt-5 overflow-hidden rounded-xl border border-[#E7E4DC] bg-white shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-[#E7E4DC] text-left text-sm">
-                      <thead className="bg-[#E7E4DC]/55 text-xs uppercase tracking-[0.16em] text-ash/70">
-                        <tr>
-                          <th className="px-4 py-3">Nama</th>
-                          <th className="px-4 py-3">Email</th>
-                          <th className="px-4 py-3">Role</th>
-                          <th className="px-4 py-3">Aksi</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#E7E4DC]">
-                        {users.map((user) => (
-                          <tr key={user.id} className="hover:bg-[#fff9eb]/50 transition-colors duration-200">
-                            <td className="px-4 py-3 font-medium text-ash">
-                              {user.full_name || '-'}
-                              {user.id === currentUserId ? (
-                                <span className="ml-2 rounded-xl bg-oren/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-oren">
-                                  You
-                                </span>
-                              ) : null}
-                            </td>
-                            <td className="px-4 py-3 text-ash/80">{user.email ?? '-'}</td>
-                            <td className="px-4 py-3 text-ash/80">
-                              <span className="rounded-xl bg-[#F5E8C6]/45 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-ash/90">
-                                {user.role}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-ash/80">
-                              <select
-                                value={user.role}
-                                disabled={user.id === currentUserId || updatingRoleId === user.id}
-                                onChange={(event) =>
-                                  void handleRoleChange(user.id, event.target.value as UserRole)
-                                }
-                                className="rounded-xl border border-[#E7E4DC] bg-white px-3 py-2 text-sm text-ash outline-none transition focus:border-oren focus:ring-4 focus:ring-oren/10 disabled:cursor-not-allowed disabled:bg-slate-100"
-                              >
-                                <option value="awardee">awardee</option>
-                                <option value="admin">admin</option>
-                              </select>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
+            <ScholarsTable
+              users={users}
+              usersLoading={usersLoading}
+              usersError={usersError}
+              currentUserId={currentUserId}
+              updatingRoleId={updatingRoleId}
+              handleRoleChange={handleRoleChange}
+            />
           ) : null}
         </>
       )}
