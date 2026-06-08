@@ -1092,7 +1092,7 @@ function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="mt-6 h-[420px] w-full rounded-xl bg-white p-3 print:mt-4 print:h-auto print:rounded-none print:bg-white print:p-0 print:break-inside-avoid">
+                <div className="mt-6 max-w-2xl mx-auto w-full aspect-square rounded-xl bg-white p-3 print:mt-4 print:h-auto print:rounded-none print:bg-white print:p-0 print:break-inside-avoid">
                   <ScatterPlot data={ipaPoints} meanPerformance={means.performance} meanImportance={means.importance} />
                 </div>
 
