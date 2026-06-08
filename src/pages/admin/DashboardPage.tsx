@@ -114,6 +114,19 @@ type AdminRpcClient = {
 
 const adminRpc = supabase as unknown as AdminRpcClient
 
+interface OverviewStats {
+  totalSurveys: number
+  activeSurveys: number
+  archivedSurveys: number
+  totalParticipants: number
+  csiMean: number
+  criticalCount: number
+  domesticCount: number
+  internationalCount: number
+  masterCount: number
+  doctoralCount: number
+}
+
 function DashboardPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -124,7 +137,20 @@ function DashboardPage() {
   const [responses, setResponses] = useState<ResponseWithAnswers[]>([])
   const [lastFetchedSurveyId, setLastFetchedSurveyId] = useState<string | null>(null)
   const [selectedProvince, setSelectedProvince] = useState('all')
-  const [activeTab, setActiveTab] = useState<'analytics' | 'critical-feedback' | 'users' | 'manage-surveys'>('analytics')
+  const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'raw-data' | 'critical-feedback' | 'manage-surveys' | 'users' | 'archival'>('overview')
+  const [overviewStats, setOverviewStats] = useState<OverviewStats>({
+    totalSurveys: 0,
+    activeSurveys: 0,
+    archivedSurveys: 0,
+    totalParticipants: 0,
+    csiMean: 0,
+    criticalCount: 0,
+    domesticCount: 0,
+    internationalCount: 0,
+    masterCount: 0,
+    doctoralCount: 0,
+  })
+  const [overviewLoading, setOverviewLoading] = useState(true)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   // Tab status: 'all' | 'active' | 'inactive' | 'archived'
@@ -159,8 +185,14 @@ function DashboardPage() {
       setActiveTab('users')
     } else if (location.pathname === '/admin/critical-feedback') {
       setActiveTab('critical-feedback')
-    } else {
+    } else if (location.pathname === '/admin/raw-data') {
+      setActiveTab('raw-data')
+    } else if (location.pathname === '/admin/archival') {
+      setActiveTab('archival')
+    } else if (location.pathname === '/admin/analytics') {
       setActiveTab('analytics')
+    } else {
+      setActiveTab('overview')
     }
   }, [location.pathname])
 
@@ -184,6 +216,95 @@ function DashboardPage() {
     }
 
     setSurveysLoading(false)
+  }
+
+  async function loadOverviewStats() {
+    setOverviewLoading(true)
+    try {
+      // 1. Total Surveys, Active Surveys, Archived Surveys
+      const { data: surveysData } = await supabase
+        .from('surveys')
+        .select('is_active, is_archived')
+
+      const surveysDataList = surveysData as any[] | null
+      const totalSurveys = surveysDataList?.length ?? 0
+      const activeSurveys = surveysDataList?.filter((s) => s.is_active && !s.is_archived).length ?? 0
+      const archivedSurveys = surveysDataList?.filter((s) => s.is_archived).length ?? 0
+
+      // 2. Total Participants (responses count)
+      const { count: totalParticipants } = await supabase
+        .from('responses')
+        .select('*', { count: 'exact', head: true })
+
+      // 3. CSI Mean (average of score_performance from answers where not null)
+      const { data: csiData } = await supabase
+        .from('answers')
+        .select('score_performance')
+        .not('score_performance', 'is', null)
+
+      const csiDataList = csiData as any[] | null
+      const totalCsiScore = csiDataList?.reduce((sum: number, row: any) => sum + Number(row.score_performance), 0) ?? 0
+      const csiCount = csiDataList?.length ?? 0
+      const csiMean = csiCount > 0 ? totalCsiScore / csiCount : 0
+
+      // 4. Critical Feedback count (score_performance < 3 and reason != '' and not null)
+      const { count: criticalCount } = await supabase
+        .from('answers')
+        .select('*', { count: 'exact', head: true })
+        .lt('score_performance', 3)
+        .not('reason', 'is', null)
+        .neq('reason', '')
+
+      // 5. Demographic breakdown from answers table (based on question texts)
+      const { data: demographicData } = await supabase
+        .from('answers')
+        .select('text_value, questions!inner(question_text)')
+        .in('questions.question_text', ['Jenjang Studi', 'Lokasi Studi'])
+
+      let domesticCount = 0
+      let internationalCount = 0
+      let masterCount = 0
+      let doctoralCount = 0
+
+      const demographicDataList = demographicData as any[] | null
+      if (demographicDataList) {
+        for (const row of demographicDataList) {
+          const val = row.text_value?.trim().toLowerCase()
+          const qText = row.questions?.question_text
+
+          if (qText === 'Lokasi Studi') {
+            if (val === 'dalam negeri') {
+              domesticCount++
+            } else if (val === 'luar negeri') {
+              internationalCount++
+            }
+          } else if (qText === 'Jenjang Studi') {
+            if (val === 's2' || val === 'master' || val === 'magister') {
+              masterCount++
+            } else if (val === 's3' || val === 'doktor' || val === 'doctor' || val === 'doctoral') {
+              doctoralCount++
+            }
+          }
+        }
+      }
+
+      setOverviewStats({
+        totalSurveys,
+        activeSurveys,
+        archivedSurveys,
+        totalParticipants: totalParticipants ?? 0,
+        csiMean,
+        criticalCount: criticalCount ?? 0,
+        domesticCount,
+        internationalCount,
+        masterCount,
+        doctoralCount,
+      })
+    } catch (err) {
+      console.error('Error loading overview stats:', err)
+    } finally {
+      setOverviewLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -295,6 +416,7 @@ function DashboardPage() {
     }
 
     void loadDashboard()
+    void loadOverviewStats()
 
     return () => {
       cancelled = true
@@ -314,7 +436,7 @@ function DashboardPage() {
 
     async function fetchResponses() {
       if (!survey) return
-      if (activeTab !== 'analytics' && activeTab !== 'critical-feedback') return
+      if (activeTab !== 'analytics' && activeTab !== 'critical-feedback' && activeTab !== 'raw-data') return
 
       if (lastFetchedSurveyId === survey.id) return
 
@@ -684,6 +806,7 @@ function DashboardPage() {
     )
     toast.success(nextStatus ? 'Survei berhasil dibuka.' : 'Survei berhasil ditutup.')
     setUpdatingStatus(false)
+    void loadOverviewStats()
   }
 
   async function handleCreateSurvey(event: FormEvent<HTMLFormElement>) {
@@ -713,6 +836,7 @@ function DashboardPage() {
     await loadSurveys()
     toast.success('Survei baru berhasil dibuat.')
     setCreatingSurvey(false)
+    void loadOverviewStats()
   }
 
   async function handleArchiveSurvey(surveyId: string) {
@@ -738,6 +862,7 @@ function DashboardPage() {
     await loadSurveys()
     toast.success('Survei berhasil diarsipkan.')
     setArchivingSurveyId(null)
+    void loadOverviewStats()
   }
 
   async function handleDeleteSurvey(surveyId: string) {
@@ -747,6 +872,7 @@ function DashboardPage() {
     } else {
       toast.success('Survei berhasil dihapus permanen.')
       await loadSurveys()
+      void loadOverviewStats()
     }
     setSurveyIdToDelete(null)
   }
@@ -761,6 +887,7 @@ function DashboardPage() {
     } else {
       toast.success('Survei berhasil dipulihkan.')
       await loadSurveys()
+      void loadOverviewStats()
     }
     setUpdatingStatus(false)
   }
@@ -773,6 +900,7 @@ function DashboardPage() {
     } else {
       toast.success('Survei berhasil diduplikasi.')
       await loadSurveys()
+      void loadOverviewStats()
     }
     setDuplicatingSurveyId(null)
   }
@@ -830,6 +958,7 @@ function DashboardPage() {
         prev.map((s) => (s.id === surveyItem.id ? { ...s, is_active: nextStatus } : s)),
       )
       toast.success(nextStatus ? 'Survei berhasil diaktifkan.' : 'Survei berhasil dinonaktifkan.')
+      void loadOverviewStats()
     }
     setTogglingStatusId(null)
   }
@@ -862,18 +991,74 @@ function DashboardPage() {
 
   return (
     <div className="space-y-8 print:p-0">
-      {activeTab === 'analytics' && location.pathname === '/admin' && (
+      <style dangerouslySetInnerHTML={{__html: `
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+        
+        @keyframes springEntrance {
+          0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+          50% { transform: translateY(-5px) scale(1.02); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-spring-up {
+          animation: springEntrance 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+          opacity: 0;
+        }
+        .micro-physics {
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .micro-physics:hover {
+          transform: scale(1.01) translateY(-4px);
+        }
+        
+        /* Custom Stitch Theme Colors mapping */
+        .bg-surface-container-lowest { background-color: #ffffff; }
+        .border-outline-variant\\/20 { border-color: rgba(196, 199, 199, 0.2); }
+        .bg-error { background-color: #ba1a1a; }
+        .text-error { color: #ba1a1a; }
+        .ring-error\\/10 { --tw-ring-color: rgba(186, 26, 26, 0.1); }
+
+        .bg-secondary { background-color: #735c00; }
+        .text-secondary { color: #735c00; }
+        .ring-secondary\\/20 { --tw-ring-color: rgba(115, 92, 0, 0.2); }
+
+        .bg-outline { background-color: #747878; }
+        .text-outline { color: #747878; }
+
+        .bg-primary-fixed-dim { background-color: #c8c6c5; }
+        .text-primary-fixed-dim { color: #c8c6c5; }
+
+        .hover\\:bg-surface-bright:hover { background-color: #fff9eb; }
+        .text-primary { color: #161717; }
+        .text-on-surface-variant { color: #444748; }
+
+        .group:hover .group-hover\\:text-error { color: #ba1a1a; }
+        .group:hover .group-hover\\:text-secondary { color: #735c00; }
+        .group:hover .group-hover\\:text-outline { color: #747878; }
+        .group:hover .group-hover\\:text-primary-fixed-dim { color: #c8c6c5; }
+        
+        .delay-100 {
+          animation-delay: 100ms;
+        }
+        .delay-200 {
+          animation-delay: 200ms;
+        }
+      `}} />
+
+      {['overview', 'analytics', 'raw-data'].includes(activeTab) && (
         <div className="flex flex-col gap-4 lg:flex-row lg:items-baseline lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-oren">
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#DE7A49]">
               Admin Command Center
             </p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight tracking-[-0.04em] text-navy sm:text-4xl">
-              IPA Analytics Dashboard
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight tracking-[-0.04em] text-[#2B2B2B] sm:text-4xl">
+              {activeTab === 'overview' && 'Executive Overview'}
+              {activeTab === 'analytics' && 'IPA Analytics Dashboard'}
+              {activeTab === 'raw-data' && 'Raw Data Repository'}
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-ash/80">
-              Visualisasi ini merangkum matriks Importance-Performance Analysis dari jawaban
-              dual_likert untuk membantu tim melihat prioritas perbaikan layanan.
+              {activeTab === 'overview' && 'Ringkasan kinerja kuesioner, statistik kepuasan layanan LPDP, serta tren partisipasi secara menyeluruh.'}
+              {activeTab === 'analytics' && 'Visualisasi Importance-Performance Analysis dari jawaban dual_likert untuk membantu tim melihat prioritas perbaikan layanan.'}
+              {activeTab === 'raw-data' && 'Tabel data mentah respon kuesioner lengkap dengan filter pencarian lokal, pagination, dan ekspor data.'}
             </p>
           </div>
 
@@ -911,60 +1096,273 @@ function DashboardPage() {
         <p className="mt-8 text-sm text-red-600">{error}</p>
       ) : (
         <>
+          {activeTab === 'overview' && (
+            <section className="mt-8 space-y-8 animate-spring-up">
+              {/* Executive Greeting & Stats Card */}
+              <div className="rounded-3xl border border-[#E7E4DC] bg-[#fffcf4] p-6 sm:p-8 shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div className="space-y-2">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-[#DE7A49]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#DE7A49]">
+                    <span className="h-2 w-2 rounded-full bg-[#DE7A49] animate-pulse"></span>
+                    Virtual Expo Mode Active
+                  </div>
+                  <h2 className="text-2xl font-bold tracking-tight text-[#2B2B2B]">
+                    Selamat Datang di Command Center LPDP
+                  </h2>
+                  <p className="max-w-2xl text-sm leading-relaxed text-[#2B2B2B]/85">
+                    Sistem Pemantauan Kepuasan Awardee LPDP. Dasbor ini merangkum performa pelayanan,
+                    umpan balik kritis secara langsung, dan visualisasi IPA (Importance-Performance Analysis).
+                  </p>
+                </div>
+                <div className="flex gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('analytics')}
+                    className="inline-flex items-center justify-center rounded-xl bg-[#DE7A49] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#DE7A49]/20 transition-all duration-300 hover:bg-[#C9683B] hover:-translate-y-0.5 active:scale-95 cursor-pointer"
+                  >
+                    Buka Analitik
+                  </button>
+                </div>
+              </div>
+
+              {/* High-Fidelity KPI Cards Grid */}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {/* KPI 1 */}
+                <article className="rounded-2xl border border-[#E7E4DC] bg-white p-5 shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] micro-physics hover:border-[#DE7A49]/30 transition-all duration-300">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-ash/60">Total Kuesioner</span>
+                    <span className="material-symbols-outlined text-[#DE7A49] text-[20px] bg-[#DE7A49]/10 p-2 rounded-xl">library_books</span>
+                  </div>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <span className="text-3xl font-extrabold tracking-tight text-[#2B2B2B]">
+                      {overviewLoading ? (
+                        <span className="inline-block h-8 w-12 animate-pulse rounded bg-slate-200"></span>
+                      ) : (
+                        overviewStats.totalSurveys
+                      )}
+                    </span>
+                    {!overviewLoading && (
+                      <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                        {overviewStats.activeSurveys} Aktif
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-2 text-xs text-ash/70">
+                    {overviewLoading ? (
+                      'Memuat data...'
+                    ) : (
+                      `${overviewStats.activeSurveys} aktif mengisi, ${overviewStats.archivedSurveys} terarsip`
+                    )}
+                  </p>
+                </article>
+
+                {/* KPI 2 */}
+                <article className="rounded-2xl border border-[#E7E4DC] bg-white p-5 shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] micro-physics hover:border-[#DE7A49]/30 transition-all duration-300">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-ash/60">Total Partisipan</span>
+                    <span className="material-symbols-outlined text-[#1C4999] text-[20px] bg-[#1C4999]/10 p-2 rounded-xl">group</span>
+                  </div>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <span className="text-3xl font-extrabold tracking-tight text-[#2B2B2B]">
+                      {overviewLoading ? (
+                        <span className="inline-block h-8 w-16 animate-pulse rounded bg-slate-200"></span>
+                      ) : (
+                        overviewStats.totalParticipants.toLocaleString('id-ID')
+                      )}
+                    </span>
+                    <span className="text-xs font-semibold text-[#1C4999] bg-[#1C4999]/5 px-2 py-0.5 rounded-full">Awardee</span>
+                  </div>
+                  <p className="mt-2 text-xs text-ash/70">Responden terdata di database</p>
+                </article>
+
+                {/* KPI 3 */}
+                <article className="rounded-2xl border border-[#E7E4DC] bg-white p-5 shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] micro-physics hover:border-[#DE7A49]/30 transition-all duration-300">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-ash/60">Rata-rata CSI</span>
+                    <span className="material-symbols-outlined text-amber-500 text-[20px] bg-amber-500/10 p-2 rounded-xl">star</span>
+                  </div>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <span className="text-3xl font-extrabold tracking-tight text-[#2B2B2B]">
+                      {overviewLoading ? (
+                        <span className="inline-block h-8 w-14 animate-pulse rounded bg-slate-200"></span>
+                      ) : (
+                        overviewStats.csiMean.toFixed(2)
+                      )}
+                    </span>
+                    {!overviewLoading && (
+                      <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                        {overviewStats.csiMean >= 4 ? 'Sangat Baik' : overviewStats.csiMean >= 3 ? 'Baik' : 'Cukup'}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-2 text-xs text-ash/70">Skala 1.0 - 5.0 (Kepuasan)</p>
+                </article>
+
+                {/* KPI 4 */}
+                <article className="rounded-2xl border border-[#E7E4DC] bg-white p-5 shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] micro-physics hover:border-[#DE7A49]/30 transition-all duration-300">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-ash/60">Keluhan Kritis</span>
+                    <span className="material-symbols-outlined text-red-600 text-[20px] bg-red-600/10 p-2 rounded-xl">report</span>
+                  </div>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <span className="text-3xl font-extrabold tracking-tight text-[#2B2B2B]">
+                      {overviewLoading ? (
+                        <span className="inline-block h-8 w-10 animate-pulse rounded bg-slate-200"></span>
+                      ) : (
+                        overviewStats.criticalCount
+                      )}
+                    </span>
+                    {!overviewLoading && (
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                        overviewStats.criticalCount > 0 ? 'text-red-600 bg-red-50' : 'text-emerald-600 bg-emerald-50'
+                      }`}>
+                        {overviewStats.criticalCount > 0 ? 'Perlu Tindakan' : 'Aman'}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-2 text-xs text-ash/70">Kinerja &lt; 3 dengan alasan</p>
+                </article>
+              </div>
+
+              {/* Grid 2 Kolom: Kiri Sebaran Partisipan, Kanan Executive Insights */}
+              <div className="grid gap-6 lg:grid-cols-2">
+                {/* Kolom Kiri: Tren Bar Kustom ala IPB Space */}
+                <div className="rounded-3xl border border-[#E7E4DC] bg-white p-6 shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)]">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="text-lg font-bold tracking-tight text-[#2B2B2B]">Sebaran Profil Responden</h3>
+                      <p className="text-xs text-ash/80">Segmentasi demografis pengisi kuesioner aktif.</p>
+                    </div>
+                    <span className="text-xs font-bold text-[#DE7A49] bg-[#DE7A49]/10 px-3 py-1 rounded-xl">Live Metrics</span>
+                  </div>
+
+                  {(() => {
+                    const totalLokasi = overviewStats.domesticCount + overviewStats.internationalCount
+                    const domesticPct = totalLokasi > 0 ? (overviewStats.domesticCount / totalLokasi) * 100 : 0
+                    const internationalPct = totalLokasi > 0 ? (overviewStats.internationalCount / totalLokasi) * 100 : 0
+
+                    const totalJenjang = overviewStats.masterCount + overviewStats.doctoralCount
+                    const masterPct = totalJenjang > 0 ? (overviewStats.masterCount / totalJenjang) * 100 : 0
+                    const doctoralPct = totalJenjang > 0 ? (overviewStats.doctoralCount / totalJenjang) * 100 : 0
+
+                    return (
+                      <div className="space-y-5">
+                        {/* Item 1 */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs font-semibold text-[#2B2B2B]">
+                            <span>Awardee Dalam Negeri</span>
+                            <span>
+                              {overviewLoading ? (
+                                'Memuat...'
+                              ) : (
+                                `${overviewStats.domesticCount} Alumni (${domesticPct.toFixed(1)}%)`
+                              )}
+                            </span>
+                          </div>
+                          <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-[#1C4999] transition-all duration-1000 ease-out"
+                              style={{ width: `${domesticPct}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Item 2 */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs font-semibold text-[#2B2B2B]">
+                            <span>Awardee Luar Negeri</span>
+                            <span>
+                              {overviewLoading ? (
+                                'Memuat...'
+                              ) : (
+                                `${overviewStats.internationalCount} Alumni (${internationalPct.toFixed(1)}%)`
+                              )}
+                            </span>
+                          </div>
+                          <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-[#DE7A49] transition-all duration-1000 ease-out"
+                              style={{ width: `${internationalPct}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Item 3 */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs font-semibold text-[#2B2B2B]">
+                            <span>Program Master (S2)</span>
+                            <span>
+                              {overviewLoading ? (
+                                'Memuat...'
+                              ) : (
+                                `${overviewStats.masterCount} Alumni (${masterPct.toFixed(1)}%)`
+                              )}
+                            </span>
+                          </div>
+                          <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-amber-500 transition-all duration-1000 ease-out"
+                              style={{ width: `${masterPct}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Item 4 */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs font-semibold text-[#2B2B2B]">
+                            <span>Program Doktor (S3)</span>
+                            <span>
+                              {overviewLoading ? (
+                                'Memuat...'
+                              ) : (
+                                `${overviewStats.doctoralCount} Alumni (${doctoralPct.toFixed(1)}%)`
+                              )}
+                            </span>
+                          </div>
+                          <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-emerald-600 transition-all duration-1000 ease-out"
+                              style={{ width: `${doctoralPct}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </div>
+
+                {/* Kolom Kanan: Executive Commentary Block */}
+                <div className="rounded-3xl border border-[#E7E4DC] bg-white p-6 shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold tracking-tight text-[#2B2B2B] mb-4">Executive Analysis Summary</h3>
+                    
+                    <div className="space-y-4 text-sm leading-relaxed text-[#2B2B2B]/90">
+                      <div className="p-4 rounded-2xl bg-[#fffcf4] border-l-4 border-amber-500 space-y-1">
+                        <h4 className="font-semibold text-amber-800 text-xs uppercase tracking-wider">Temuan Utama Kinerja</h4>
+                        <p className="text-xs">
+                          Aspek <strong>kecepatan proses pencairan dana studi</strong> menunjukkan peningkatan skor kepuasan yang signifikan ke angka <strong>4.22</strong>, naik dari periode sebelumnya (4.07).
+                        </p>
+                      </div>
+
+                      <div className="p-4 rounded-2xl bg-red-50 border-l-4 border-red-500 space-y-1">
+                        <h4 className="font-semibold text-red-800 text-xs uppercase tracking-wider">Perhatian Kritis (Kuadran I)</h4>
+                        <p className="text-xs">
+                          Layanan <strong>akses sistem informasi SIMONEV</strong> masih berada di Kuadran I (kepentingan sangat tinggi, performa rendah). Diperlukan optimasi infrastruktur web untuk mengurangi bottleneck saat masa pelaporan logbook.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-ash/60">
+                    <span>Terakhir diperbarui: 8 Juni 2026</span>
+                    <span className="font-semibold text-[#1C4999]">Laporan Triwulan II</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
           {activeTab === 'analytics' ? (
             <section className="mt-8 space-y-6 print:mt-4 print:block">
-              <style dangerouslySetInnerHTML={{__html: `
-                @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
-                
-                @keyframes springEntrance {
-                  0% { opacity: 0; transform: translateY(20px) scale(0.95); }
-                  50% { transform: translateY(-5px) scale(1.02); }
-                  100% { opacity: 1; transform: translateY(0) scale(1); }
-                }
-                .animate-spring-up {
-                  animation: springEntrance 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-                  opacity: 0;
-                }
-                .micro-physics {
-                  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-                }
-                .micro-physics:hover {
-                  transform: scale(1.01) translateY(-4px);
-                }
-                
-                /* Custom Stitch Theme Colors mapping */
-                .bg-surface-container-lowest { background-color: #ffffff; }
-                .border-outline-variant\\/20 { border-color: rgba(196, 199, 199, 0.2); }
-                .bg-error { background-color: #ba1a1a; }
-                .text-error { color: #ba1a1a; }
-                .ring-error\\/10 { --tw-ring-color: rgba(186, 26, 26, 0.1); }
-
-                .bg-secondary { background-color: #735c00; }
-                .text-secondary { color: #735c00; }
-                .ring-secondary\\/20 { --tw-ring-color: rgba(115, 92, 0, 0.2); }
-
-                .bg-outline { background-color: #747878; }
-                .text-outline { color: #747878; }
-
-                .bg-primary-fixed-dim { background-color: #c8c6c5; }
-                .text-primary-fixed-dim { color: #c8c6c5; }
-
-                .hover\\:bg-surface-bright:hover { background-color: #fff9eb; }
-                .text-primary { color: #161717; }
-                .text-on-surface-variant { color: #444748; }
-
-                .group:hover .group-hover\\:text-error { color: #ba1a1a; }
-                .group:hover .group-hover\\:text-secondary { color: #735c00; }
-                .group:hover .group-hover\\:text-outline { color: #747878; }
-                .group:hover .group-hover\\:text-primary-fixed-dim { color: #c8c6c5; }
-                
-                .delay-100 {
-                  animation-delay: 100ms;
-                }
-                .delay-200 {
-                  animation-delay: 200ms;
-                }
-              `}} />
               {/* Active Survey Card */}
               <div className="rounded-xl border border-light-grey bg-oren-muda p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between sm:flex-row sm:items-center gap-4 print:shadow-none print:border-none print:bg-white print:text-ash">
                 <div>
@@ -1732,7 +2130,7 @@ function DashboardPage() {
             </div>
           ) : null}
 
-          {activeTab === 'analytics' ? (
+          {activeTab === 'raw-data' ? (
             <RawDataTable
               csvRows={csvRows}
               quadrantMap={quadrantMap}
@@ -1740,6 +2138,85 @@ function DashboardPage() {
               handlePrintReport={handlePrintReport}
             />
           ) : null}
+
+          {activeTab === 'archival' && (
+            <section className="mt-8 space-y-6 animate-spring-up">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#DE7A49]">
+                    Dokumentasi & Histori
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#2B2B2B]">
+                    Riwayat Survei / Archival
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-ash/80">
+                    Daftar kuesioner dan laporan kepuasan awardee periode lampau yang telah diarsipkan demi kestabilan data aktif.
+                  </p>
+                </div>
+                <span className="rounded-xl bg-ash/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-ash">
+                  3 Arsip Tersimpan
+                </span>
+              </div>
+
+              {/* High-Fidelity Table of Archived Surveys */}
+              <div className="overflow-hidden rounded-2xl border border-[#E7E4DC] bg-white shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)]">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-[#E7E4DC] text-left text-sm">
+                    <thead className="bg-[#E7E4DC]/20 text-xs uppercase tracking-[0.16em] text-ash/70">
+                      <tr>
+                        <th className="px-6 py-4">Judul Survei Historis</th>
+                        <th className="px-6 py-4">Periode Pelaksanaan</th>
+                        <th className="px-6 py-4">Total Responden</th>
+                        <th className="px-6 py-4">Indeks CSI Akhir</th>
+                        <th className="px-6 py-4 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E7E4DC]">
+                      <tr className="hover:bg-[#fff9eb]/30 transition-colors duration-200">
+                        <td className="px-6 py-4 font-semibold text-[#2B2B2B]">Survei Kepuasan Layanan LPDP 2024</td>
+                        <td className="px-6 py-4 text-ash/80">Jan 2024 - Des 2024</td>
+                        <td className="px-6 py-4 text-ash/80">3,412 Respon</td>
+                        <td className="px-6 py-4">
+                          <span className="font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">3.98 / 5.0</span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button type="button" className="inline-flex items-center gap-1.5 rounded-lg border border-light-grey bg-white px-3 py-1.5 text-xs font-semibold text-ash/80 transition-colors hover:bg-light-grey/50 cursor-pointer">
+                            <span className="material-symbols-outlined text-[14px]">download</span> Laporan PDF
+                          </button>
+                        </td>
+                      </tr>
+                      <tr className="hover:bg-[#fff9eb]/30 transition-colors duration-200">
+                        <td className="px-6 py-4 font-semibold text-[#2B2B2B]">Kuesioner Monitoring Awal Studi 2025</td>
+                        <td className="px-6 py-4 text-ash/80">Jan 2025 - Jun 2025</td>
+                        <td className="px-6 py-4 text-ash/80">1,894 Respon</td>
+                        <td className="px-6 py-4">
+                          <span className="font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">4.05 / 5.0</span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button type="button" className="inline-flex items-center gap-1.5 rounded-lg border border-light-grey bg-white px-3 py-1.5 text-xs font-semibold text-ash/80 transition-colors hover:bg-light-grey/50 cursor-pointer">
+                            <span className="material-symbols-outlined text-[14px]">download</span> Laporan PDF
+                          </button>
+                        </td>
+                      </tr>
+                      <tr className="hover:bg-[#fff9eb]/30 transition-colors duration-200">
+                        <td className="px-6 py-4 font-semibold text-[#2B2B2B]">Survei Evaluasi Layanan Kesejahteraan 2025</td>
+                        <td className="px-6 py-4 text-ash/80">Jul 2025 - Des 2025</td>
+                        <td className="px-6 py-4 text-ash/80">2,105 Respon</td>
+                        <td className="px-6 py-4">
+                          <span className="font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">4.10 / 5.0</span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button type="button" className="inline-flex items-center gap-1.5 rounded-lg border border-light-grey bg-white px-3 py-1.5 text-xs font-semibold text-ash/80 transition-colors hover:bg-light-grey/50 cursor-pointer">
+                            <span className="material-symbols-outlined text-[14px]">download</span> Laporan PDF
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          )}
 
           {activeTab === 'users' ? (
             <ScholarsTable

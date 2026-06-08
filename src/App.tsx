@@ -83,6 +83,10 @@ function App() {
             }
           >
             <Route path="/admin" element={<DashboardPage />} />
+            <Route path="/admin/overview" element={<DashboardPage />} />
+            <Route path="/admin/analytics" element={<DashboardPage />} />
+            <Route path="/admin/raw-data" element={<DashboardPage />} />
+            <Route path="/admin/archival" element={<DashboardPage />} />
             <Route path="/admin/surveys" element={<DashboardPage />} />
             <Route path="/admin/surveys/:id/edit" element={<EditSurveyPage />} />
             <Route path="/admin/critical-feedback" element={<DashboardPage />} />

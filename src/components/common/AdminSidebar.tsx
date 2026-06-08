@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { BarChart2, AlertOctagon, ClipboardList, Users, LogOut, UserCircle2, Globe } from 'lucide-react'
+import { BarChart2, AlertOctagon, ClipboardList, Users, LogOut, UserCircle2, Globe, Home, Database, Archive } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useTranslation } from 'react-i18next'
 
@@ -14,9 +14,19 @@ const AdminSidebar = () => {
 
   const menuItems = [
     {
-      name: t('sidebar.analytics', 'Analitik'),
+      name: t('sidebar.overview', 'Overview'),
       path: '/admin',
+      icon: Home,
+    },
+    {
+      name: t('sidebar.analytics', 'Analitik'),
+      path: '/admin/analytics',
       icon: BarChart2,
+    },
+    {
+      name: t('sidebar.raw_data', 'Data Mentah'),
+      path: '/admin/raw-data',
+      icon: Database,
     },
     {
       name: t('sidebar.critical_feedback', 'Umpan Balik Kritis'),
@@ -32,6 +42,11 @@ const AdminSidebar = () => {
       name: t('sidebar.manage_users', 'Manajemen Pengguna'),
       path: '/admin/respondents',
       icon: Users,
+    },
+    {
+      name: t('sidebar.archival', 'Riwayat Survei / Archival'),
+      path: '/admin/archival',
+      icon: Archive,
     },
   ]
 
