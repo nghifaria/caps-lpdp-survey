@@ -151,6 +151,10 @@ function DashboardPage() {
     doctoralCount: 0,
   })
   const [overviewLoading, setOverviewLoading] = useState(true)
+  const [feedbackSearch, setFeedbackSearch] = useState('')
+  const [feedbackTab, setFeedbackTab] = useState<'high' | 'all' | 'resolved'>('high')
+  const [resolvedFeedbacks, setResolvedFeedbacks] = useState<string[]>([])
+  const [expandedFeedbackId, setExpandedFeedbackId] = useState<string | null>(null)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   // Tab status: 'all' | 'active' | 'inactive' | 'archived'
@@ -610,6 +614,79 @@ function DashboardPage() {
     return feedback
   }, [filteredResponses])
 
+  const formatRelativeTime = (date: Date) => {
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMins / 60)
+    const diffDays = Math.floor(diffHours / 24)
+
+    if (diffMins < 1) return 'Baru saja'
+    if (diffMins < 60) return `${diffMins} menit lalu`
+    if (diffHours < 24) return `${diffHours} jam lalu`
+    return `${diffDays} hari lalu`
+  }
+
+  const feedbackItemsExtended = useMemo(() => {
+    return criticalFeedback.map((fb) => {
+      const parentResp = responses.find((r) => r.id === fb.response_id)
+      
+      const nameAns = parentResp?.answers?.find(
+        (a) => a.questions?.question_text === 'Nama Lengkap Awardee' || a.questions?.question_text === 'Nama Lengkap'
+      )
+      const nameVal = nameAns?.text_value || 'Anonim'
+
+      const univAns = parentResp?.answers?.find(
+        (a) => a.questions?.question_text === 'Perguruan Tinggi Tujuan' || a.questions?.question_text === 'Perguruan Tinggi'
+      )
+      const univVal = univAns?.text_value || '-'
+
+      const provAns = parentResp?.answers?.find(
+        (a) => a.questions?.question_text === 'Asal Provinsi'
+      )
+      const provVal = provAns?.text_value || '-'
+
+      const submittedAt = parentResp?.submitted_at ? new Date(parentResp.submitted_at) : new Date()
+
+      return {
+        ...fb,
+        awardeeName: nameVal,
+        university: univVal,
+        province: provVal,
+        submittedAt
+      }
+    })
+  }, [criticalFeedback, responses])
+
+  const finalFeedbackItems = useMemo(() => {
+    // 1. Filter out resolved tickets if not in resolved tab
+    if (feedbackTab === 'resolved') {
+      return feedbackItemsExtended.filter((item) => resolvedFeedbacks.includes(item.response_id))
+    }
+
+    let list = feedbackItemsExtended.filter((item) => !resolvedFeedbacks.includes(item.response_id))
+
+    // 2. Filter by search query
+    const query = feedbackSearch.trim().toLowerCase()
+    if (query) {
+      list = list.filter(
+        (item) =>
+          item.awardeeName.toLowerCase().includes(query) ||
+          item.university.toLowerCase().includes(query) ||
+          item.response_id.toLowerCase().includes(query) ||
+          item.reason.toLowerCase().includes(query) ||
+          item.question_text.toLowerCase().includes(query)
+      )
+    }
+
+    // 3. Filter by active tab priority
+    if (feedbackTab === 'high') {
+      list = list.filter((item) => item.performance === 1)
+    }
+
+    return list
+  }, [feedbackItemsExtended, feedbackSearch, feedbackTab, resolvedFeedbacks])
+
   const participationTrend = useMemo(() => {
     const counts = new Map<string, number>()
 
@@ -807,6 +884,11 @@ function DashboardPage() {
     toast.success(nextStatus ? 'Survei berhasil dibuka.' : 'Survei berhasil ditutup.')
     setUpdatingStatus(false)
     void loadOverviewStats()
+  }
+
+  const handleResolveFeedback = (id: string, name: string) => {
+    setResolvedFeedbacks((prev) => [...prev, id])
+    toast.success(`Umpan balik dari ${name} berhasil diselesaikan.`)
   }
 
   async function handleCreateSurvey(event: FormEvent<HTMLFormElement>) {
@@ -1678,7 +1760,8 @@ function DashboardPage() {
           ) : null}
 
           {activeTab === 'critical-feedback' ? (
-            <div className="space-y-6">
+            <div className="space-y-8 animate-spring-up">
+              {/* Header Info */}
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.22em] text-oren">
@@ -1691,53 +1774,286 @@ function DashboardPage() {
                     Keluhan dengan skor performa di bawah 3 dan alasan yang diisi, sudah mengikuti filter provinsi aktif.
                   </p>
                 </div>
-                <span className="rounded-xl bg-navy/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-navy">
-                  {criticalFeedback.length} feedback
-                </span>
               </div>
 
-              {criticalFeedback.length ? (
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  {criticalFeedback.map((feedback, index) => (
-                    <article
-                      key={`${feedback.response_id}-${feedback.question_text}-${index}`}
-                      className="rounded-xl border border-light-grey bg-white p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)]"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-oren">
-                            Teks Pertanyaan
-                          </p>
-                          <h3 className="mt-2 text-base font-semibold tracking-tight text-ash">
-                            {feedback.question_text}
-                          </h3>
-                        </div>
-                        <span className="rounded-xl bg-red-50 px-3 py-1 text-sm font-semibold text-red-700">
-                          Performance {feedback.performance}
-                        </span>
-                      </div>
+              {/* Filters & Search Toolbar */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-2xl border border-light-grey shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)]">
+                {/* Search */}
+                <div className="relative w-full md:w-96">
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-ash/40">
+                    search
+                  </span>
+                  <input
+                    type="text"
+                    value={feedbackSearch}
+                    onChange={(e) => setFeedbackSearch(e.target.value)}
+                    placeholder="Cari nama, universitas, atau ID tiket..."
+                    className="w-full bg-[#FFFCF4] border-b-2 border-light-grey focus:border-oren px-12 py-3 text-sm text-ash placeholder:text-ash/40 transition-colors duration-300 rounded-t-lg focus:outline-none focus:ring-0"
+                  />
+                </div>
 
-                      <div className="mt-4 rounded-xl border border-red-100 bg-red-50/50 px-4 py-3">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-red-600">
-                          Keluhan
-                        </p>
-                        <p className="mt-2 text-sm leading-7 text-ash/90">
-                          {feedback.reason}
-                        </p>
+                {/* Status Tabs */}
+                <div className="flex p-1 bg-light-grey/40 rounded-xl border border-light-grey/60">
+                  <button
+                    onClick={() => setFeedbackTab('high')}
+                    className={`px-5 py-2 rounded-lg font-semibold text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                      feedbackTab === 'high'
+                        ? 'bg-ash text-white shadow-sm'
+                        : 'text-ash/70 hover:text-ash'
+                    }`}
+                  >
+                    High Priority ({feedbackItemsExtended.filter(item => item.performance === 1 && !resolvedFeedbacks.includes(item.response_id)).length})
+                  </button>
+                  <button
+                    onClick={() => setFeedbackTab('all')}
+                    className={`px-5 py-2 rounded-lg font-semibold text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                      feedbackTab === 'all'
+                        ? 'bg-ash text-white shadow-sm'
+                        : 'text-ash/70 hover:text-ash'
+                    }`}
+                  >
+                    All Tickets ({feedbackItemsExtended.filter(item => !resolvedFeedbacks.includes(item.response_id)).length})
+                  </button>
+                  <button
+                    onClick={() => setFeedbackTab('resolved')}
+                    className={`px-5 py-2 rounded-lg font-semibold text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                      feedbackTab === 'resolved'
+                        ? 'bg-ash text-white shadow-sm'
+                        : 'text-ash/70 hover:text-ash'
+                    }`}
+                  >
+                    Resolved ({feedbackItemsExtended.filter(item => resolvedFeedbacks.includes(item.response_id)).length})
+                  </button>
+                </div>
+              </div>
+
+              {/* Grid Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Main Ticket List (7 Columns) */}
+                <div className="lg:col-span-7 flex flex-col gap-6">
+                  {finalFeedbackItems.length ? (
+                    finalFeedbackItems.map((item, index) => {
+                      const isExpanded = expandedFeedbackId === item.response_id
+                      const isS1 = item.performance === 1
+
+                      return (
+                        <div
+                          key={`${item.response_id}-${index}`}
+                          className={`bg-white rounded-3xl p-6 lg:p-8 shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] hover:shadow-[0_25px_50px_rgba(43,43,43,0.08)] border transition-all duration-500 ease-[cubic-bezier(0.175,0.885,0.32,1.275)] relative overflow-hidden group ${
+                            isS1 ? 'border-red-100' : 'border-amber-100'
+                          }`}
+                        >
+                          {/* Accent Bar */}
+                          <div
+                            className={`absolute left-0 top-0 bottom-0 w-2 ${
+                              isS1 ? 'bg-[#ba1a1a]' : 'bg-[#e9c349]'
+                            }`}
+                          />
+
+                          {/* Topic, Badge, Time */}
+                          <div className="flex justify-between items-center mb-4">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-ash/60 truncate max-w-[60%]">
+                              {item.question_text}
+                            </h4>
+                            <div className="flex items-center gap-3">
+                              {isS1 ? (
+                                <span className="inline-flex items-center gap-1 bg-[#ffdad6]/40 text-[#ba1a1a] px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-[#ba1a1a]/20">
+                                  Score 1
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 bg-[#fed65b]/20 text-[#745c00] px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-[#735c00]/20">
+                                  Score {item.performance}
+                                </span>
+                              )}
+                              <span className="text-[11px] text-ash/50 font-medium">
+                                {formatRelativeTime(item.submittedAt)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {isExpanded ? (
+                            /* Expanded State */
+                            <div className="border-t border-light-grey/40 pt-4 mt-2">
+                              {/* Awardee Info Header */}
+                              <div className="flex items-center gap-3 mb-6">
+                                <div
+                                  className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
+                                    isS1 ? 'bg-red-50 text-[#ba1a1a]' : 'bg-amber-50 text-[#745c00]'
+                                  }`}
+                                >
+                                  <span className="material-symbols-outlined font-bold">
+                                    {isS1 ? 'warning' : 'report_problem'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <h3 className="text-base font-bold text-ash">
+                                    {item.awardeeName}
+                                  </h3>
+                                  <p className="text-[11px] font-semibold text-ash/50 tracking-wider">
+                                    ID: {item.response_id.slice(0, 8).toUpperCase()}...
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Demographic Grid */}
+                              <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-[#FFFCF4] rounded-xl border border-light-grey/40">
+                                <div>
+                                  <p className="text-[10px] font-bold uppercase tracking-wider text-ash/40 mb-1">
+                                    Perguruan Tinggi
+                                  </p>
+                                  <p className="text-xs font-semibold text-ash">
+                                    {item.university}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-bold uppercase tracking-wider text-ash/40 mb-1">
+                                    Asal Provinsi
+                                  </p>
+                                  <p className="text-xs font-semibold text-ash">
+                                    {item.province}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Complaint Text */}
+                              <div className="mb-6">
+                                <p className="text-xs font-bold uppercase tracking-wider text-ash/45 mb-1.5">
+                                  Alasan/Keluhan
+                                </p>
+                                <p className="text-sm text-ash/80 leading-relaxed bg-white p-3 rounded-xl border border-light-grey/30">
+                                  &ldquo;{item.reason}&rdquo;
+                                </p>
+                              </div>
+
+                              {/* Tool Actions */}
+                              <div className="flex gap-3 justify-end border-t border-light-grey/30 pt-4">
+                                <button
+                                  type="button"
+                                  onClick={() => toast.info(isS1 ? 'Eskalasi ke manajer berhasil diajukan.' : 'Forward ke tim IT sukses.')}
+                                  className="px-4 py-2 rounded-lg text-xs font-semibold text-ash border border-light-grey hover:bg-[#FFFCF4] transition-all duration-200 cursor-pointer"
+                                >
+                                  {isS1 ? 'Eskalasi Manajer' : 'Forward ke IT'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => toast.success(isS1 ? `Menghubungi awardee ${item.awardeeName} via telepon/pesan...` : `Membuat balasan email ke ${item.awardeeName}...`)}
+                                  className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-ash hover:bg-oren hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  <span className="material-symbols-outlined text-[14px]">
+                                    {isS1 ? 'call' : 'mail'}
+                                  </span>
+                                  {isS1 ? 'Hubungi Awardee' : 'Balas Email'}
+                                </button>
+                                {!resolvedFeedbacks.includes(item.response_id) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleResolveFeedback(item.response_id, item.awardeeName)}
+                                    className="w-9 h-9 rounded-lg border border-light-grey flex items-center justify-center text-ash/70 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-colors duration-200 cursor-pointer"
+                                    title="Tandai Selesai"
+                                  >
+                                    <span className="material-symbols-outlined text-sm font-bold">check</span>
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="mt-4 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedFeedbackId(null)}
+                                  className="text-xs font-bold text-ash/40 hover:text-oren flex items-center gap-0.5 justify-center mx-auto transition-all cursor-pointer"
+                                >
+                                  Tutup Detail
+                                  <span className="material-symbols-outlined text-[14px]">expand_less</span>
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            /* Collapsed State */
+                            <div
+                              onClick={() => setExpandedFeedbackId(item.response_id)}
+                              className="cursor-pointer"
+                            >
+                              <div className="mb-4">
+                                <p className="text-sm text-ash/70 leading-relaxed truncate">
+                                  &ldquo;{item.reason}&rdquo;
+                                </p>
+                              </div>
+
+                              {/* Action Link */}
+                              <div className="flex items-center text-oren text-xs font-bold gap-0.5 hover:opacity-80 transition-opacity">
+                                Selengkapnya
+                                <span className="material-symbols-outlined text-[14px]">expand_more</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })
+                  ) : (
+                    /* Empty State */
+                    <div className="rounded-3xl border border-dashed border-light-grey bg-white p-10 text-center shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)]">
+                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                        <span className="material-symbols-outlined text-2xl font-bold">check_circle</span>
                       </div>
-                    </article>
-                  ))}
+                      <h3 className="mt-4 text-base font-bold text-ash">
+                        {feedbackTab === 'resolved' 
+                          ? 'Belum ada tiket diselesaikan' 
+                          : 'Semua responden puas periode ini'}
+                      </h3>
+                      <p className="mt-2 text-xs leading-5 text-ash/60 max-w-sm mx-auto">
+                        {feedbackTab === 'resolved'
+                          ? 'Umpan balik yang Anda tandai selesai akan tercantum di tab ini.'
+                          : 'Tidak ada keluhan kritis yang terdeteksi sesuai filter pencarian atau provinsi saat ini.'}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="mt-5 rounded-xl border border-[#E7E4DC] bg-white p-8 text-center shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
-                  <p className="text-base font-semibold text-ash">
-                    Semua responden puas dengan layanan periode ini.
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-ash/80">
-                    Tidak ada feedback kritis yang memenuhi kriteria pada filter provinsi saat ini.
-                  </p>
+
+                {/* Contextual Side Panel (5 Columns) */}
+                <div className="lg:col-span-5 flex flex-col gap-6">
+                  {/* Stats Bento Card */}
+                  <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] border border-light-grey">
+                    <h3 className="text-base font-bold text-ash mb-6">Ringkasan Hari Ini</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 bg-[#FFFCF4] rounded-2xl flex flex-col items-center justify-center text-center border border-light-grey/40">
+                        <span className="text-3xl font-black text-[#ba1a1a]">
+                          {feedbackItemsExtended.filter(item => item.performance === 1 && !resolvedFeedbacks.includes(item.response_id)).length}
+                        </span>
+                        <span className="text-[10px] font-bold text-ash/50 mt-2 uppercase tracking-wider">Kritis (S1)</span>
+                      </div>
+                      <div className="p-4 bg-[#FFFCF4] rounded-2xl flex flex-col items-center justify-center text-center border border-light-grey/40">
+                        <span className="text-3xl font-black text-[#AB924F]">
+                          {feedbackItemsExtended.filter(item => item.performance > 1 && !resolvedFeedbacks.includes(item.response_id)).length}
+                        </span>
+                        <span className="text-[10px] font-bold text-ash/50 mt-2 uppercase tracking-wider">Menengah (S2)</span>
+                      </div>
+                      <div className="col-span-2 p-5 bg-ash rounded-2xl flex items-center justify-between mt-2 shadow-sm text-white">
+                        <div>
+                          <span className="text-[10px] font-semibold text-white/70 block mb-1 uppercase tracking-wider">Rata-rata Waktu Respon</span>
+                          <span className="text-2xl font-black">1h 24m</span>
+                        </div>
+                        <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-oren-muda">
+                          <span className="material-symbols-outlined text-xl">timer</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SOP Quick Reference */}
+                  <div className="bg-white rounded-3xl p-6 shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] border border-light-grey">
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="material-symbols-outlined text-oren text-lg font-bold">book</span>
+                      <h3 className="text-sm font-bold text-ash">SOP Resolusi S1</h3>
+                    </div>
+                    <ol className="list-decimal list-inside text-xs text-ash/70 space-y-3 leading-relaxed">
+                      <li className="pl-1"><span className="font-semibold text-ash">Verifikasi</span> identitas awardee via sistem.</li>
+                      <li className="pl-1"><span className="font-semibold text-ash">Hubungi langsung</span> via telepon dalam waktu <span className="font-bold text-[#ba1a1a]">1 jam</span> setelah tiket diterima.</li>
+                      <li className="pl-1"><span className="font-semibold text-ash">Catat kronologi</span> kejadian di CRM internal.</li>
+                      <li className="pl-1">Jika terkait dana, <span className="font-semibold text-ash">eskalasi</span> ke Divisi Keuangan.</li>
+                    </ol>
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           ) : null}
 
