@@ -630,6 +630,23 @@ function SurveyPage() {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,_var(--color-broken-white)_0%,_var(--color-light-grey)_100%)] px-4 py-10 text-ash sm:px-6 lg:px-8 animate-fade-in">
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes springEntrance {
+          0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+          50% { transform: translateY(-5px) scale(1.02); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-spring-up {
+          animation: springEntrance 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+          opacity: 0;
+        }
+        .micro-physics {
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .micro-physics:hover {
+          transform: scale(1.01) translateY(-4px);
+        }
+      `}} />
       <div className="mx-auto max-w-4xl">
         <div className="mb-4">
           <button
@@ -642,7 +659,7 @@ function SurveyPage() {
           </button>
         </div>
 
-        <div className="rounded-3xl border border-light-grey bg-white p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] sm:p-8">
+        <div className="rounded-3xl border border-light-grey bg-[#fffcf4] p-6 shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] sm:p-8 animate-spring-up">
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-oren">
             Survey Shell
           </p>
@@ -688,14 +705,14 @@ function SurveyPage() {
             )}
 
             {totalSteps > 0 ? (
-              <div className="mt-6 rounded-2xl border border-light-grey bg-white p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)]">
+              <div className="mt-6 rounded-2xl border border-light-grey bg-[#fffcf4] p-4 shadow-[0_4px_20px_-4px_rgba(43,43,43,0.03)]">
                 <div className="mb-3 flex items-center justify-between gap-3 text-xs font-medium uppercase tracking-[0.18em] text-ash/50">
                   <span>{`Bagian ${currentStep + 1} dari ${totalSteps}`}</span>
                   <span>{`${Math.round(progressPercentage)}%`}</span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                <div className="h-2 overflow-hidden rounded-full bg-light-grey/50">
                   <div
-                    className="h-full rounded-full bg-oren transition-all duration-300 ease-out"
+                    className="h-full rounded-full bg-[#d4af37] transition-all duration-500 ease-out"
                     style={{ width: `${progressPercentage}%` }}
                   />
                 </div>
@@ -803,7 +820,7 @@ function SurveyPage() {
                         window.scrollTo(0, 0)
                       }}
                       disabled={submitting}
-                      className="inline-flex items-center justify-center rounded-xl border border-light-grey bg-transparent px-6 py-3 text-sm font-semibold text-ash/80 transition-colors hover:bg-slate-50 hover:text-ash disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                      className="inline-flex items-center justify-center rounded-xl border border-light-grey bg-transparent px-6 py-3 text-sm font-semibold text-ash/80 transition-transform duration-200 hover:bg-slate-50 hover:text-ash active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer micro-physics"
                     >
                       Kembali
                     </button>
@@ -814,7 +831,7 @@ function SurveyPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex items-center justify-center rounded-xl bg-oren px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(189,91,44,0.28)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer"
+                    className="inline-flex items-center justify-center rounded-xl bg-oren px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(189,91,44,0.28)] transition-transform duration-200 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer micro-physics"
                   >
                     {submitting ? 'Memproses...' : 'Selanjutnya'}
                   </button>
@@ -822,7 +839,7 @@ function SurveyPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex items-center justify-center rounded-xl bg-oren px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(189,91,44,0.28)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer"
+                    className="inline-flex items-center justify-center rounded-xl bg-oren px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(189,91,44,0.28)] transition-transform duration-200 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer micro-physics"
                   >
                     {submitting ? 'Mengirim...' : 'Kirim Survei'}
                   </button>

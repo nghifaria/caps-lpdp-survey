@@ -994,7 +994,7 @@ function DashboardPage() {
                 {executiveKpis.map((kpi) => (
                   <article
                     key={kpi.label}
-                    className={`rounded-xl border bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.04)] print:shadow-none print:border-none ${kpi.tone === 'warning'
+                    className={`rounded-2xl border bg-white p-4 shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] print:shadow-none print:border-none animate-spring-up micro-physics delay-100 ${kpi.tone === 'warning'
                         ? 'border-red-200'
                         : kpi.tone === 'accent'
                           ? 'border-navy/20'
@@ -1019,7 +1019,7 @@ function DashboardPage() {
               </div>
 
               <div className="grid gap-6 xl:grid-cols-2 print:grid print:grid-cols-2 print:gap-4">
-                <div className="rounded-xl border border-[#E7E4DC] bg-[#FFFfff] p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid">
+                <div className="rounded-2xl border border-[#E7E4DC] bg-[#FFFfff] p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] animate-spring-up micro-physics delay-200">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <h2 className="text-lg font-semibold tracking-tight text-ash">Tren Partisipasi</h2>
@@ -1055,7 +1055,7 @@ function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-[#E7E4DC] bg-[#FFFfff] p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+                <div className="rounded-2xl border border-[#E7E4DC] bg-[#FFFfff] p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] animate-spring-up micro-physics delay-200">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <h2 className="text-lg font-semibold tracking-tight text-ash">Sebaran Provinsi</h2>
@@ -1440,7 +1440,7 @@ function DashboardPage() {
                   {paginatedSurveys.map((item) => (
                     <article
                       key={item.id}
-                      className="rounded-xl border border-light-grey bg-white p-5 shadow-[0_4px_18px_-6px_rgba(0,0,0,0.08)] transition-all duration-200 hover:-translate-y-0.5"
+                      className="rounded-xl border border-light-grey bg-white p-5 shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] hover:bg-[#fff9eb]/50 transition-all duration-200 hover:-translate-y-1"
                     >
                       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div className="min-w-0">
@@ -1470,7 +1470,7 @@ function DashboardPage() {
                             onClick={() => void handleToggleSurveyStatus(item)}
                             disabled={togglingStatusId === item.id}
                             title={item.is_active ? 'Nonaktifkan survei' : 'Aktifkan survei'}
-                            className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all duration-300 hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer ${item.is_active
+                            className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-transform duration-200 hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer ${item.is_active
                                 ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                                 : 'border-light-grey bg-white text-ash/70'
                               }`}
@@ -1487,7 +1487,7 @@ function DashboardPage() {
                           {/* Tombol Edit → pergi ke halaman edit survei */}
                           <Link
                             to={`/admin/surveys/${item.id}/edit`}
-                            className="inline-flex items-center gap-2 rounded-xl bg-light-blue px-4 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 cursor-pointer"
+                            className="inline-flex items-center gap-2 rounded-xl bg-light-blue px-4 py-2.5 text-sm font-semibold text-white transition-transform duration-200 hover:brightness-110 active:scale-95 cursor-pointer"
                           >
                             <ExternalLink size={15} />
                             Edit Survei
@@ -1500,14 +1500,14 @@ function DashboardPage() {
                                 type="button"
                                 onClick={() => void handleRestoreSurvey(item.id)}
                                 disabled={updatingStatus}
-                                className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition-all duration-300 hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                                className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition-transform duration-200 hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                               >
                                 Pulihkan
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setSurveyIdToDelete(item.id)}
-                                className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 transition-all duration-300 hover:brightness-105 active:scale-95 cursor-pointer"
+                                className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 transition-transform duration-200 hover:brightness-105 active:scale-95 cursor-pointer"
                               >
                                 <Trash2 size={15} />
                                 Hapus Permanen
@@ -1520,7 +1520,7 @@ function DashboardPage() {
                             <Link
                               to={`/survey/${item.id}?preview=true`}
                               target="_blank"
-                              className="inline-flex items-center gap-2 rounded-xl border border-light-grey bg-white px-4 py-2.5 text-sm font-semibold text-ash/80 transition-all duration-300 hover:bg-light-grey/50 active:scale-95 cursor-pointer"
+                              className="inline-flex items-center gap-2 rounded-xl border border-light-grey bg-white px-4 py-2.5 text-sm font-semibold text-ash/80 transition-transform duration-200 hover:bg-light-grey/50 active:scale-95 cursor-pointer"
                             >
                               Preview
                             </Link>
@@ -1531,7 +1531,7 @@ function DashboardPage() {
                             type="button"
                             onClick={() => void handleDuplicateSurvey(item.id)}
                             disabled={duplicatingSurveyId === item.id}
-                            className="inline-flex items-center gap-2 rounded-xl border border-light-grey bg-white px-4 py-2.5 text-sm font-semibold text-ash/80 transition-all duration-300 hover:bg-light-grey/50 active:scale-95 cursor-pointer"
+                            className="inline-flex items-center gap-2 rounded-xl border border-light-grey bg-white px-4 py-2.5 text-sm font-semibold text-ash/80 transition-transform duration-200 hover:bg-light-grey/50 active:scale-95 cursor-pointer"
                           >
                             {duplicatingSurveyId === item.id ? 'Menduplikasi...' : 'Duplikat'}
                           </button>
@@ -1542,7 +1542,7 @@ function DashboardPage() {
                               type="button"
                               onClick={() => setSurveyIdToArchive(item.id)}
                               disabled={archivingSurveyId === item.id}
-                              className="inline-flex items-center gap-2 rounded-xl bg-ash/10 px-4 py-2.5 text-sm font-semibold text-ash/80 transition-all duration-300 hover:bg-ash/20 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                              className="inline-flex items-center gap-2 rounded-xl bg-ash/10 px-4 py-2.5 text-sm font-semibold text-ash/80 transition-transform duration-200 hover:bg-ash/20 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                             >
                               <ArchiveX size={15} />
                               {archivingSurveyId === item.id ? 'Mengarsipkan...' : 'Arsipkan'}
@@ -1774,7 +1774,7 @@ function DashboardPage() {
                       </thead>
                       <tbody className="divide-y divide-[#E7E4DC]">
                         {csvRows.map((row) => (
-                          <tr key={`${row.response_id}-${row.question_text}`}>
+                          <tr key={`${row.response_id}-${row.question_text}`} className="hover:bg-[#fff9eb]/50 transition-colors duration-200">
                             <td className="px-4 py-3 text-ash/80">{row.response_id}</td>
                             <td className="px-4 py-3 text-ash/80">{row.submitted_at}</td>
                             <td className="px-4 py-3 font-medium text-ash">{row.question_text}</td>
@@ -1830,7 +1830,7 @@ function DashboardPage() {
                       </thead>
                       <tbody className="divide-y divide-[#E7E4DC]">
                         {users.map((user) => (
-                          <tr key={user.id}>
+                          <tr key={user.id} className="hover:bg-[#fff9eb]/50 transition-colors duration-200">
                             <td className="px-4 py-3 font-medium text-ash">
                               {user.full_name || '-'}
                               {user.id === currentUserId ? (

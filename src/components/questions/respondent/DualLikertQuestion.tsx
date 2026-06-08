@@ -36,7 +36,7 @@ export default function DualLikertQuestion({ question, value, onChange, preview 
               <td className="px-4 py-4 font-medium text-ash bg-white">Kepentingan</td>
               {likertValues.map((val) => (
                 <td key={`importance-${val}`} className="p-0 border-l border-light-grey text-center bg-white">
-                  <label className="flex h-full w-full items-center justify-center py-4 cursor-pointer">
+                  <label className="flex h-full w-full items-center justify-center py-4 cursor-pointer hover:scale-105 transition-transform duration-200">
                     <input
                       type="radio"
                       name={`importance-${question?.id}`}
@@ -44,7 +44,7 @@ export default function DualLikertQuestion({ question, value, onChange, preview 
                       checked={value?.scoreImportance === String(val)}
                       onChange={() => onChange({ scoreImportance: String(val) })}
                       disabled={preview}
-                      className="h-4 w-4 text-oren focus:ring-oren border-light-grey cursor-pointer"
+                      className="h-5 w-5 text-[#d4af37] focus:ring-[#d4af37] border-light-grey cursor-pointer transition-transform duration-200 hover:scale-110"
                     />
                   </label>
                 </td>
@@ -54,7 +54,7 @@ export default function DualLikertQuestion({ question, value, onChange, preview 
               <td className="px-4 py-4 font-medium text-ash bg-white">Kepuasan</td>
               {likertValues.map((val) => (
                 <td key={`performance-${val}`} className="p-0 border-l border-light-grey text-center bg-white">
-                  <label className="flex h-full w-full items-center justify-center py-4 cursor-pointer">
+                  <label className="flex h-full w-full items-center justify-center py-4 cursor-pointer hover:scale-105 transition-transform duration-200">
                     <input
                       type="radio"
                       name={`performance-${question?.id}`}
@@ -62,7 +62,7 @@ export default function DualLikertQuestion({ question, value, onChange, preview 
                       checked={value?.scorePerformance === String(val)}
                       onChange={() => onChange({ scorePerformance: String(val) })}
                       disabled={preview}
-                      className="h-4 w-4 text-oren focus:ring-oren border-light-grey cursor-pointer"
+                      className="h-5 w-5 text-[#d4af37] focus:ring-[#d4af37] border-light-grey cursor-pointer transition-transform duration-200 hover:scale-110"
                     />
                   </label>
                 </td>

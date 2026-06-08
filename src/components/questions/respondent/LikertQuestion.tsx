@@ -11,7 +11,7 @@ export default function LikertQuestion({ question, value, onChange, preview = fa
   return (
     <div className="mt-4 flex items-center justify-around rounded-2xl border border-slate-200 bg-white p-4">
       {values.map((val) => (
-        <label key={val} className="flex flex-col items-center gap-2 cursor-pointer">
+        <label key={val} className="flex flex-col items-center gap-2 cursor-pointer hover:scale-105 transition-transform duration-200">
           <span className="text-xs font-semibold text-slate-500">{val}</span>
           <input
             type="radio"
@@ -20,7 +20,7 @@ export default function LikertQuestion({ question, value, onChange, preview = fa
             checked={value === String(val)}
             onChange={() => onChange(String(val))}
             disabled={preview}
-            className="h-4 w-4 border-slate-300 text-oren-muda focus:ring-oren-muda"
+            className="h-5 w-5 border-slate-300 text-[#d4af37] focus:ring-[#d4af37] hover:scale-110 transition-transform duration-200 cursor-pointer"
           />
         </label>
       ))}
