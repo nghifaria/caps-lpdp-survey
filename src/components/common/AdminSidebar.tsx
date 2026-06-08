@@ -46,7 +46,7 @@ const AdminSidebar = () => {
   }
 
   return (
-    <aside className="fixed left-0 top-0 flex h-screen w-[230px] flex-col justify-between bg-[#242428] px-5 py-6 text-white">
+    <aside className="fixed left-0 top-0 flex h-screen w-[230px] flex-col justify-between bg-[#242428] px-5 py-6 text-white print:hidden">
       {/* Top Section */}
       <div className="pt-16">
         {/* Sidebar Header */}

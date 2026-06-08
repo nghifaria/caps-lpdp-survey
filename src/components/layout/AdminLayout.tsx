@@ -9,12 +9,12 @@ const AdminLayout = () => {
       <AdminSidebar />
 
       {/* Right Section */}
-      <div className="ml-[230px] flex flex-1 flex-col">
+      <div className="ml-[230px] flex flex-1 flex-col print:ml-0">
         {/* Topbar */}
         <AdminTopbar />
 
         {/* Main Content */}
-        <main className="flex-1 p-8 overflow-y-auto">
+        <main className="flex-1 p-8 overflow-y-auto print:p-0">
           <Outlet />
         </main>
       </div>
