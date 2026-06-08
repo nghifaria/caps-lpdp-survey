@@ -1064,45 +1064,54 @@ function DashboardPage() {
                 </div>
               </div>
 
-              <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr] print:block print:gap-0">
-                <div className="rounded-xl border border-light-grey bg-white p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between print:block">
-                    <div>
-                      <h2 className="text-lg font-semibold tracking-tight text-ash">IPA Scatter Plot</h2>
-                      <p className="mt-1 text-sm text-ash/80">
-                        Kiri bawah ke kanan atas menggambarkan distribusi kuadran.
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end print:hidden">
-                      <label className="block text-sm font-medium text-ash" htmlFor="province-filter">
-                        Asal Provinsi
-                        <select
-                          id="province-filter"
-                          value={selectedProvince}
-                          onChange={(event) => setSelectedProvince(event.target.value)}
-                          className="mt-2 w-full min-w-[220px] rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-navy/30 focus:ring-offset-1"
-                        >
-                          <option value="all">Semua Provinsi</option>
-                          {provinceOptions.map((province) => (
-                            <option key={province} value={province}>
-                              {province}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
+              <div className="rounded-xl border border-light-grey bg-white p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between print:block">
+                  <div>
+                    <h2 className="text-lg font-semibold tracking-tight text-ash">IPA Scatter Plot</h2>
+                    <p className="mt-1 text-sm text-ash/80">
+                      Kiri bawah ke kanan atas menggambarkan distribusi kuadran.
+                    </p>
                   </div>
-
-                  <div className="mt-6 h-[420px] w-full rounded-xl bg-white p-3 print:mt-4 print:h-auto print:rounded-none print:bg-white print:p-0 print:break-inside-avoid">
-                    <ScatterPlot data={ipaPoints} meanPerformance={means.performance} meanImportance={means.importance} />
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end print:hidden">
+                    <label className="block text-sm font-medium text-ash" htmlFor="province-filter">
+                      Asal Provinsi
+                      <select
+                        id="province-filter"
+                        value={selectedProvince}
+                        onChange={(event) => setSelectedProvince(event.target.value)}
+                        className="mt-2 w-full min-w-[220px] rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-navy/30 focus:ring-offset-1"
+                      >
+                        <option value="all">Semua Provinsi</option>
+                        {provinceOptions.map((province) => (
+                          <option key={province} value={province}>
+                            {province}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   </div>
                 </div>
-                <div className="rounded-xl border border-light-grey bg-white p-5 sm:p-6 print:mt-4 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
-                  <h2 className="text-lg font-semibold tracking-tight text-ash">Ringkasan Kuadran</h2>
-                  <div className="mt-4 space-y-3 text-sm text-ash/80">
-                    {['Q1: Prioritas Utama', 'Q2: Pertahankan Prestasi', 'Q3: Prioritas Rendah', 'Q4: Berlebihan'].map((label) => (
-                      <div key={label} className="rounded-xl border border-light-grey bg-white px-4 py-3 text-ash">
-                        {label}
+
+                <div className="mt-6 h-[420px] w-full rounded-xl bg-white p-3 print:mt-4 print:h-auto print:rounded-none print:bg-white print:p-0 print:break-inside-avoid">
+                  <ScatterPlot data={ipaPoints} meanPerformance={means.performance} meanImportance={means.importance} />
+                </div>
+
+                <div className="mt-6 border-t border-light-grey pt-5">
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-ash/60">
+                    Ringkasan Kuadran / Quadrant Reference
+                  </h3>
+                  <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {[
+                      { name: 'Q1: Prioritas Utama', tone: 'border-red-100 bg-red-50/50 text-red-700' },
+                      { name: 'Q2: Pertahankan Prestasi', tone: 'border-emerald-100 bg-emerald-50/50 text-emerald-700' },
+                      { name: 'Q3: Prioritas Rendah', tone: 'border-amber-100 bg-amber-50/50 text-amber-700' },
+                      { name: 'Q4: Berlebihan', tone: 'border-navy/15 bg-navy/5 text-navy' }
+                    ].map((quad) => (
+                      <div
+                        key={quad.name}
+                        className={`rounded-xl border px-4 py-3 text-xs font-semibold text-center transition ${quad.tone}`}
+                      >
+                        {quad.name}
                       </div>
                     ))}
                   </div>
