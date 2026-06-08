@@ -115,7 +115,7 @@ const adminRpc = supabase as unknown as AdminRpcClient
 function DashboardPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  
+
   const [survey, setSurvey] = useState<SurveyRow | null>(null)
   // Gunakan SurveyWithCount agar question_count sudah ter-fetch sekaligus (tanpa N+1)
   const [surveys, setSurveys] = useState<SurveyWithCount[]>([])
@@ -232,9 +232,9 @@ function DashboardPage() {
         .select('role')
         .eq('id', user.id)
         .maybeSingle()) as {
-        data: { role: UserRole } | null
-        error: { message: string } | null
-      }
+          data: { role: UserRole } | null
+          error: { message: string } | null
+        }
 
       if (profileError) {
         if (!cancelled) {
@@ -675,9 +675,9 @@ function DashboardPage() {
     setSurvey((current) =>
       current
         ? {
-            ...current,
-            is_active: nextStatus,
-          }
+          ...current,
+          is_active: nextStatus,
+        }
         : current,
     )
     toast.success(nextStatus ? 'Survei berhasil dibuka.' : 'Survei berhasil ditutup.')
@@ -911,50 +911,30 @@ function DashboardPage() {
         <>
           {activeTab === 'analytics' ? (
             <section className="mt-8 space-y-6 print:mt-4 print:block">
-              {/* Active Survey and Means Cards */}
-              <div className="grid gap-4 lg:grid-cols-[2fr_1fr_1fr] items-stretch">
-                <div className="rounded-xl border border-light-grey bg-oren-muda p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between sm:flex-row sm:items-center gap-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/80">
-                      Survei Aktif
-                    </p>
-                    <h3 className="mt-2 text-lg font-bold tracking-tight text-white md:text-xl">
-                      {survey?.title ?? '-'}
-                    </h3>
-                  </div>
-                  {survey && (
-                    <button
-                      type="button"
-                      onClick={toggleSurveyStatus}
-                      disabled={updatingStatus}
-                      className="inline-flex items-center justify-center rounded-xl bg-navy px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer shrink-0 print:hidden"
-                    >
-                      {updatingStatus
-                        ? 'Memperbarui...'
-                        : survey.is_active
-                          ? 'Tutup Survei'
-                          : 'Buka Survei'}
-                    </button>
-                  )}
+              {/* Active Survey Card */}
+              <div className="rounded-xl border border-light-grey bg-oren-muda p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between sm:flex-row sm:items-center gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/80">
+                    Survei Aktif
+                  </p>
+                  <h3 className="mt-2 text-lg font-bold tracking-tight text-white md:text-xl">
+                    {survey?.title ?? '-'}
+                  </h3>
                 </div>
-
-                <div className="rounded-xl border border-light-grey bg-white p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ash/60">
-                    Mean X (Performance)
-                  </p>
-                  <p className="mt-3 text-3xl font-bold tracking-tight text-ash">
-                    {means.performance.toFixed(2)}
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-light-grey bg-white p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ash/60">
-                    Mean Y (Importance)
-                  </p>
-                  <p className="mt-3 text-3xl font-bold tracking-tight text-ash">
-                    {means.importance.toFixed(2)}
-                  </p>
-                </div>
+                {survey && (
+                  <button
+                    type="button"
+                    onClick={toggleSurveyStatus}
+                    disabled={updatingStatus}
+                    className="inline-flex items-center justify-center rounded-xl bg-navy px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer shrink-0 print:hidden"
+                  >
+                    {updatingStatus
+                      ? 'Memperbarui...'
+                      : survey.is_active
+                        ? 'Tutup Survei'
+                        : 'Buka Survei'}
+                  </button>
+                )}
               </div>
 
               {/* KPI Cards */}
@@ -962,25 +942,23 @@ function DashboardPage() {
                 {executiveKpis.map((kpi) => (
                   <article
                     key={kpi.label}
-                    className={`rounded-xl border bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.04)] print:shadow-none ${
-                      kpi.tone === 'warning'
+                    className={`rounded-xl border bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.04)] print:shadow-none ${kpi.tone === 'warning'
                         ? 'border-red-200'
                         : kpi.tone === 'accent'
                           ? 'border-navy/20'
                           : 'border-light-grey'
-                    }`}
+                      }`}
                   >
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ash/60">
                       {kpi.label}
                     </p>
                     <p
-                      className={`mt-3 text-2xl font-semibold tracking-[-0.04em] ${
-                        kpi.tone === 'warning'
+                      className={`mt-3 text-2xl font-semibold tracking-[-0.04em] ${kpi.tone === 'warning'
                           ? 'text-red-700'
                           : kpi.tone === 'accent'
                             ? 'text-navy'
                             : 'text-ash'
-                      }`}
+                        }`}
                     >
                       {kpi.value}
                     </p>
@@ -1064,56 +1042,85 @@ function DashboardPage() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-light-grey bg-white p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between print:block">
-                  <div>
-                    <h2 className="text-lg font-semibold tracking-tight text-ash">IPA Scatter Plot</h2>
-                    <p className="mt-1 text-sm text-ash/80">
-                      Kiri bawah ke kanan atas menggambarkan distribusi kuadran.
-                    </p>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 print:block">
+                {/* Kolom Kiri: Porsi Grafik (lg:col-span-7) */}
+                <div className="lg:col-span-7 rounded-xl border border-light-grey bg-white p-5 sm:p-6 print:rounded-none print:border-0 print:bg-white print:p-0 print:break-inside-avoid shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between print:block">
+                    <div>
+                      <h2 className="text-lg font-semibold tracking-tight text-ash">IPA Scatter Plot</h2>
+                      <p className="mt-1 text-sm text-ash/80">
+                        Kiri bawah ke kanan atas menggambarkan distribusi kuadran.
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end print:hidden">
+                      <label className="block text-sm font-medium text-ash" htmlFor="province-filter">
+                        Asal Provinsi
+                        <select
+                          id="province-filter"
+                          value={selectedProvince}
+                          onChange={(event) => setSelectedProvince(event.target.value)}
+                          className="mt-2 w-full min-w-[220px] rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-navy/30 focus:ring-offset-1"
+                        >
+                          <option value="all">Semua Provinsi</option>
+                          {provinceOptions.map((province) => (
+                            <option key={province} value={province}>
+                              {province}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end print:hidden">
-                    <label className="block text-sm font-medium text-ash" htmlFor="province-filter">
-                      Asal Provinsi
-                      <select
-                        id="province-filter"
-                        value={selectedProvince}
-                        onChange={(event) => setSelectedProvince(event.target.value)}
-                        className="mt-2 w-full min-w-[220px] rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition-shadow focus:outline-none focus:ring-2 focus:ring-navy/30 focus:ring-offset-1"
-                      >
-                        <option value="all">Semua Provinsi</option>
-                        {provinceOptions.map((province) => (
-                          <option key={province} value={province}>
-                            {province}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+
+                  <div className="mt-6 w-full max-w-xl mx-auto aspect-square rounded-xl bg-white p-3 print:mt-4 print:h-auto print:rounded-none print:bg-white print:p-0 print:break-inside-avoid">
+                    <ScatterPlot data={ipaPoints} meanPerformance={means.performance} meanImportance={means.importance} />
                   </div>
                 </div>
 
-                <div className="mt-6 max-w-2xl mx-auto w-full aspect-square rounded-xl bg-white p-3 print:mt-4 print:h-auto print:rounded-none print:bg-white print:p-0 print:break-inside-avoid">
-                  <ScatterPlot data={ipaPoints} meanPerformance={means.performance} meanImportance={means.importance} />
-                </div>
+                {/* Kolom Kanan: Panel Metrik & Legenda Vertikal (lg:col-span-5) */}
+                <div className="lg:col-span-5 flex flex-col gap-6 print:mt-6">
+                  {/* Bagian Atas: 2 Kartu KPI Mini berdampingan */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="rounded-xl border border-light-grey bg-white p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ash/60">
+                        MEAN PERFORMANCE
+                      </p>
+                      <p className="mt-3 text-3xl font-bold tracking-tight text-ash">
+                        {means.performance.toFixed(2)}
+                      </p>
+                    </div>
 
-                <div className="mt-6 border-t border-light-grey pt-5">
-                  <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-ash/60">
-                    Ringkasan Kuadran / Quadrant Reference
-                  </h3>
-                  <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    {[
-                      { name: 'Q1: Prioritas Utama', tone: 'border-red-100 bg-red-50/50 text-red-700' },
-                      { name: 'Q2: Pertahankan Prestasi', tone: 'border-emerald-100 bg-emerald-50/50 text-emerald-700' },
-                      { name: 'Q3: Prioritas Rendah', tone: 'border-amber-100 bg-amber-50/50 text-amber-700' },
-                      { name: 'Q4: Berlebihan', tone: 'border-navy/15 bg-navy/5 text-navy' }
-                    ].map((quad) => (
-                      <div
-                        key={quad.name}
-                        className={`rounded-xl border px-4 py-3 text-xs font-semibold text-center transition ${quad.tone}`}
-                      >
-                        {quad.name}
-                      </div>
-                    ))}
+                    <div className="rounded-xl border border-light-grey bg-white p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ash/60">
+                        MEAN IMPORTANCE
+                      </p>
+                      <p className="mt-3 text-3xl font-bold tracking-tight text-ash">
+                        {means.importance.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Bagian Bawah: List Legenda Vertikal */}
+                  <div className="rounded-xl border border-light-grey bg-white p-5 sm:p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] flex-1 flex flex-col">
+                    <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-ash/60 mb-4">
+                      Ringkasan Kuadran / Quadrant Reference
+                    </h3>
+                    <div className="space-y-4 flex-1 flex flex-col justify-between">
+                      {[
+                        { name: 'Q1: Prioritas Utama', desc: 'Kepentingan tinggi, kinerja rendah. Fokus utama perbaikan.', tone: 'border-red-100 bg-red-50/50 text-red-700' },
+                        { name: 'Q2: Pertahankan Prestasi', desc: 'Kepentingan tinggi, kinerja tinggi. Jaga kualitas pelayanan.', tone: 'border-emerald-100 bg-emerald-50/50 text-emerald-700' },
+                        { name: 'Q3: Prioritas Rendah', desc: 'Kepentingan rendah, kinerja rendah. Dampak perbaikan minimal.', tone: 'border-amber-100 bg-amber-50/50 text-amber-700' },
+                        { name: 'Q4: Berlebihan', desc: 'Kepentingan rendah, kinerja tinggi. Alokasikan sumber daya ke area lain.', tone: 'border-navy/15 bg-navy/5 text-navy' }
+                      ].map((quad) => (
+                        <div
+                          key={quad.name}
+                          className={`rounded-xl border p-4 transition ${quad.tone}`}
+                        >
+                          <p className="text-xs font-bold uppercase tracking-[0.08em]">{quad.name}</p>
+                          <p className="mt-1 text-[11px] font-medium leading-relaxed opacity-90">{quad.desc}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1367,18 +1374,17 @@ function DashboardPage() {
                       key={filter}
                       type="button"
                       onClick={() => { setActiveStatusFilter(filter as 'all' | 'active' | 'inactive' | 'archived'); setCurrentPage(1) }}
-                      className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition cursor-pointer ${
-                        activeStatusFilter === filter
+                      className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition cursor-pointer ${activeStatusFilter === filter
                           ? 'bg-oren-muda text-white'
                           : 'border border-light-grey bg-white text-ash hover:bg-light-grey/50'
-                      }`}
+                        }`}
                     >
                       {labels[filter]}
                       <span className="ml-2 rounded-xl bg-black/10 px-1.5 py-0.5 text-[11px]">
                         {filter === 'all' ? surveys.filter(s => !s.is_archived).length
                           : filter === 'active' ? surveys.filter(s => s.is_active && !s.is_archived).length
-                          : filter === 'inactive' ? surveys.filter(s => !s.is_active && !s.is_archived).length
-                          : surveys.filter(s => s.is_archived).length}
+                            : filter === 'inactive' ? surveys.filter(s => !s.is_active && !s.is_archived).length
+                              : surveys.filter(s => s.is_archived).length}
                       </span>
                     </button>
                   )
@@ -1442,11 +1448,10 @@ function DashboardPage() {
                             <span className="h-4 w-px bg-light-grey" aria-hidden="true" />
                             <span>Dibuat {formatSurveyDate(item.created_at)}</span>
                             <span
-                              className={`rounded-xl px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${
-                                item.is_active
+                              className={`rounded-xl px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${item.is_active
                                   ? 'bg-emerald-50 text-emerald-700'
                                   : 'border border-light-grey bg-white text-ash/60'
-                              }`}
+                                }`}
                             >
                               {item.is_active ? 'Aktif' : 'Nonaktif'}
                             </span>
@@ -1460,11 +1465,10 @@ function DashboardPage() {
                             onClick={() => void handleToggleSurveyStatus(item)}
                             disabled={togglingStatusId === item.id}
                             title={item.is_active ? 'Nonaktifkan survei' : 'Aktifkan survei'}
-                            className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all duration-300 hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer ${
-                              item.is_active
+                            className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all duration-300 hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer ${item.is_active
                                 ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                                 : 'border-light-grey bg-white text-ash/70'
-                            }`}
+                              }`}
                           >
                             {togglingStatusId === item.id ? (
                               <span className="opacity-60">...</span>
@@ -1601,7 +1605,7 @@ function DashboardPage() {
                         <p className="mt-1 text-sm leading-6 text-ash/80">
                           Masukkan judul survei baru di bawah ini untuk memulai.
                         </p>
-                        
+
                         <form
                           onSubmit={(event) => void handleCreateSurvey(event)}
                           className="mt-4 space-y-4"
