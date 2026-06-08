@@ -911,6 +911,58 @@ function DashboardPage() {
         <>
           {activeTab === 'analytics' ? (
             <section className="mt-8 space-y-6 print:mt-4 print:block">
+              <style dangerouslySetInnerHTML={{__html: `
+                @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+                
+                @keyframes springEntrance {
+                  0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+                  50% { transform: translateY(-5px) scale(1.02); }
+                  100% { opacity: 1; transform: translateY(0) scale(1); }
+                }
+                .animate-spring-up {
+                  animation: springEntrance 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+                  opacity: 0;
+                }
+                .micro-physics {
+                  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                }
+                .micro-physics:hover {
+                  transform: scale(1.01) translateY(-4px);
+                }
+                
+                /* Custom Stitch Theme Colors mapping */
+                .bg-surface-container-lowest { background-color: #ffffff; }
+                .border-outline-variant\\/20 { border-color: rgba(196, 199, 199, 0.2); }
+                .bg-error { background-color: #ba1a1a; }
+                .text-error { color: #ba1a1a; }
+                .ring-error\\/10 { --tw-ring-color: rgba(186, 26, 26, 0.1); }
+
+                .bg-secondary { background-color: #735c00; }
+                .text-secondary { color: #735c00; }
+                .ring-secondary\\/20 { --tw-ring-color: rgba(115, 92, 0, 0.2); }
+
+                .bg-outline { background-color: #747878; }
+                .text-outline { color: #747878; }
+
+                .bg-primary-fixed-dim { background-color: #c8c6c5; }
+                .text-primary-fixed-dim { color: #c8c6c5; }
+
+                .hover\\:bg-surface-bright:hover { background-color: #fff9eb; }
+                .text-primary { color: #161717; }
+                .text-on-surface-variant { color: #444748; }
+
+                .group:hover .group-hover\\:text-error { color: #ba1a1a; }
+                .group:hover .group-hover\\:text-secondary { color: #735c00; }
+                .group:hover .group-hover\\:text-outline { color: #747878; }
+                .group:hover .group-hover\\:text-primary-fixed-dim { color: #c8c6c5; }
+                
+                .delay-100 {
+                  animation-delay: 100ms;
+                }
+                .delay-200 {
+                  animation-delay: 200ms;
+                }
+              `}} />
               {/* Active Survey Card */}
               <div className="rounded-xl border border-light-grey bg-oren-muda p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between sm:flex-row sm:items-center gap-4 print:shadow-none print:border-none print:bg-white print:text-ash">
                 <div>
@@ -1044,7 +1096,7 @@ function DashboardPage() {
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 print:block">
                 {/* Kolom Kiri: Porsi Grafik (lg:col-span-7) */}
-                <div className="lg:col-span-7 rounded-xl border border-light-grey bg-white p-5 sm:p-6 print:rounded-none print:border-none print:shadow-none print:bg-white print:p-0 print:break-inside-avoid shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+                <div className="lg:col-span-7 rounded-xl border border-light-grey bg-white p-5 sm:p-6 print:rounded-none print:border-none print:shadow-none print:bg-white print:p-0 print:break-inside-avoid shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] animate-spring-up micro-physics">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between print:block">
                     <div>
                       <h2 className="text-lg font-semibold tracking-tight text-ash">IPA Scatter Plot</h2>
@@ -1081,46 +1133,71 @@ function DashboardPage() {
                 <div className="lg:col-span-5 flex flex-col gap-6 print:mt-6">
                   {/* Bagian Atas: 2 Kartu KPI Mini berdampingan */}
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="rounded-xl border border-light-grey bg-white p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between print:shadow-none print:border-none">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ash/60">
-                        MEAN PERFORMANCE
-                      </p>
-                      <p className="mt-3 text-3xl font-bold tracking-tight text-ash">
-                        {means.performance.toFixed(2)}
-                      </p>
+                    {/* KPI 1 */}
+                    <div className="bg-surface-container-lowest rounded-xl shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] p-5 micro-physics border border-outline-variant/20 flex flex-col justify-between print:shadow-none print:border-none animate-spring-up delay-100">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-label-caps text-label-caps text-on-surface-variant">Mean Perf.</span>
+                        <span className="material-symbols-outlined text-secondary text-[18px]">trending_up</span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-headline-lg text-headline-lg text-primary tracking-tight">{means.performance.toFixed(2)}</span>
+                        <span className="font-body-sm text-[12px] text-on-surface-variant">/ 5.0</span>
+                      </div>
                     </div>
 
-                    <div className="rounded-xl border border-light-grey bg-white p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between print:shadow-none print:border-none">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ash/60">
-                        MEAN IMPORTANCE
-                      </p>
-                      <p className="mt-3 text-3xl font-bold tracking-tight text-ash">
-                        {means.importance.toFixed(2)}
-                      </p>
+                    {/* KPI 2 */}
+                    <div className="bg-surface-container-lowest rounded-xl shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] p-5 micro-physics border border-outline-variant/20 flex flex-col justify-between print:shadow-none print:border-none animate-spring-up delay-100">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-label-caps text-label-caps text-on-surface-variant">Mean Imp.</span>
+                        <span className="material-symbols-outlined text-outline text-[18px]">star_rate</span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-headline-lg text-headline-lg text-primary tracking-tight">{means.importance.toFixed(2)}</span>
+                        <span className="font-body-sm text-[12px] text-on-surface-variant">/ 5.0</span>
+                      </div>
                     </div>
                   </div>
 
                   {/* Bagian Bawah: List Legenda Vertikal */}
-                  <div className="rounded-xl border border-light-grey bg-white p-5 sm:p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] flex-1 flex flex-col print:shadow-none print:border-none">
-                    <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-ash/60 mb-4">
-                      Ringkasan Kuadran / Quadrant Reference
-                    </h3>
-                    <div className="space-y-4 flex-1 flex flex-col justify-between">
-                      {[
-                        { name: 'Q1: Prioritas Utama', desc: 'Kepentingan tinggi, kinerja rendah. Fokus utama perbaikan.', tone: 'border-red-100 bg-red-50/50 text-red-700' },
-                        { name: 'Q2: Pertahankan Prestasi', desc: 'Kepentingan tinggi, kinerja tinggi. Jaga kualitas pelayanan.', tone: 'border-emerald-100 bg-emerald-50/50 text-emerald-700' },
-                        { name: 'Q3: Prioritas Rendah', desc: 'Kepentingan rendah, kinerja rendah. Dampak perbaikan minimal.', tone: 'border-amber-100 bg-amber-50/50 text-amber-700' },
-                        { name: 'Q4: Berlebihan', desc: 'Kepentingan rendah, kinerja tinggi. Alokasikan sumber daya ke area lain.', tone: 'border-navy/15 bg-navy/5 text-navy' }
-                      ].map((quad) => (
-                        <div
-                          key={quad.name}
-                          className={`rounded-xl border p-4 transition ${quad.tone}`}
-                        >
-                          <p className="text-xs font-bold uppercase tracking-[0.08em]">{quad.name}</p>
-                          <p className="mt-1 text-[11px] font-medium leading-relaxed opacity-90">{quad.desc}</p>
-                        </div>
-                      ))}
+                  <div className="bg-surface-container-lowest rounded-xl shadow-[0_10px_40px_-10px_rgba(43,43,43,0.08)] p-6 flex-1 border border-outline-variant/20 print:shadow-none print:border-none animate-spring-up delay-200">
+                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-outline-variant/20">
+                      <span className="material-symbols-outlined text-primary">fact_check</span>
+                      <h3 className="font-title-md text-[18px] font-semibold text-primary">Quadrant Diagnostics</h3>
                     </div>
+                    <ul className="space-y-4">
+                      {/* Legend Item 1 */}
+                      <li className="flex items-start gap-4 p-3 rounded-lg hover:bg-surface-bright transition-colors cursor-default group">
+                        <div className="w-2 h-2 mt-2 rounded-full bg-error ring-4 ring-error/10 shrink-0"></div>
+                        <div>
+                          <h4 className="font-title-md text-[15px] font-medium text-primary group-hover:text-error transition-colors">Q1: Prioritas Utama</h4>
+                          <p className="font-body-sm text-[13px] text-on-surface-variant leading-tight mt-1">Kepentingan tinggi, kinerja rendah. Fokus utama perbaikan.</p>
+                        </div>
+                      </li>
+                      {/* Legend Item 2 */}
+                      <li className="flex items-start gap-4 p-3 rounded-lg hover:bg-surface-bright transition-colors cursor-default group">
+                        <div className="w-2 h-2 mt-2 rounded-full bg-secondary ring-4 ring-secondary/20 shrink-0"></div>
+                        <div>
+                          <h4 className="font-title-md text-[15px] font-medium text-primary group-hover:text-secondary transition-colors">Q2: Pertahankan Prestasi</h4>
+                          <p className="font-body-sm text-[13px] text-on-surface-variant leading-tight mt-1">Kepentingan tinggi, kinerja tinggi. Jaga kualitas pelayanan.</p>
+                        </div>
+                      </li>
+                      {/* Legend Item 3 */}
+                      <li className="flex items-start gap-4 p-3 rounded-lg hover:bg-surface-bright transition-colors cursor-default group">
+                        <div className="w-2 h-2 mt-2 rounded-full bg-outline shrink-0"></div>
+                        <div>
+                          <h4 className="font-title-md text-[15px] font-medium text-primary group-hover:text-outline transition-colors">Q3: Prioritas Rendah</h4>
+                          <p className="font-body-sm text-[13px] text-on-surface-variant leading-tight mt-1">Kepentingan rendah, kinerja rendah. Dampak perbaikan minimal.</p>
+                        </div>
+                      </li>
+                      {/* Legend Item 4 */}
+                      <li className="flex items-start gap-4 p-3 rounded-lg hover:bg-surface-bright transition-colors cursor-default group">
+                        <div className="w-2 h-2 mt-2 rounded-full bg-primary-fixed-dim shrink-0"></div>
+                        <div>
+                          <h4 className="font-title-md text-[15px] font-medium text-primary group-hover:text-primary-fixed-dim transition-colors">Q4: Berlebihan</h4>
+                          <p className="font-body-sm text-[13px] text-on-surface-variant leading-tight mt-1">Kepentingan rendah, kinerja tinggi. Alokasikan sumber daya ke area lain.</p>
+                        </div>
+                      </li>
+                    </ul>
                   </div>
                 </div>
               </div>
