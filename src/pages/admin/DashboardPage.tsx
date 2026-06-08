@@ -1791,15 +1791,53 @@ function ScatterPlot({
   meanImportance: number
 }) {
   return (
-    <ResponsiveContainer width="100%" height="100%"
-    >
-      <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 10 }}>
+    <ResponsiveContainer width="100%" height="100%">
+      <ScatterChart margin={{ top: 20, right: 20, bottom: 15, left: 10 }}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis type="number" dataKey="performance" name="Performance" domain={[0, 5]} ticks={[1, 2, 3, 4, 5]} />
-        <YAxis type="number" dataKey="importance" name="Importance" domain={[0, 5]} ticks={[1, 2, 3, 4, 5]} />
+        <XAxis
+          type="number"
+          dataKey="performance"
+          name="Performance"
+          domain={[0, 5]}
+          ticks={[1, 2, 3, 4, 5]}
+          height={50}
+          label={{
+            value: 'Kinerja / Performance',
+            position: 'insideBottom',
+            offset: 0,
+            fill: '#2B2B2B',
+            fontSize: 12,
+            fontWeight: 600,
+            style: { fontFamily: 'Montserrat, sans-serif' }
+          }}
+        />
+        <YAxis
+          type="number"
+          dataKey="importance"
+          name="Importance"
+          domain={[0, 5]}
+          ticks={[1, 2, 3, 4, 5]}
+          width={55}
+          label={{
+            value: 'Kepentingan / Importance',
+            angle: -90,
+            position: 'insideLeft',
+            offset: 0,
+            fill: '#2B2B2B',
+            fontSize: 12,
+            fontWeight: 600,
+            style: { textAnchor: 'middle', fontFamily: 'Montserrat, sans-serif' }
+          }}
+        />
         <ReferenceLine x={meanPerformance} stroke="#DE7A49" strokeDasharray="4 4" />
         <ReferenceLine y={meanImportance} stroke="#1C4999" strokeDasharray="4 4" />
-        <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+        <Tooltip
+          cursor={{ strokeDasharray: '3 3' }}
+          formatter={(value: any, name: any) => {
+            const formattedValue = typeof value === 'number' ? value.toFixed(2) : value
+            return [formattedValue, name]
+          }}
+        />
         <Scatter data={data} fill="#BD5B2C" />
       </ScatterChart>
     </ResponsiveContainer>
