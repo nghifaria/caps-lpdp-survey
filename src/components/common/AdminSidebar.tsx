@@ -1,5 +1,13 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { BarChart2, AlertOctagon, ClipboardList, Users, LogOut, UserCircle2, Globe } from 'lucide-react'
+import {
+  ChartLineUp,
+  ShieldCheckered,
+  Archive,
+  TreeStructure,
+  SignOut,
+  UserCircle,
+  Globe
+} from '@phosphor-icons/react'
 import { supabase } from '../../lib/supabase'
 import { useTranslation } from 'react-i18next'
 
@@ -16,22 +24,22 @@ const AdminSidebar = () => {
     {
       name: t('sidebar.analytics', 'Analitik'),
       path: '/admin',
-      icon: BarChart2,
+      icon: ChartLineUp,
     },
     {
       name: t('sidebar.critical_feedback', 'Umpan Balik Kritis'),
       path: '/admin/critical-feedback',
-      icon: AlertOctagon,
+      icon: ShieldCheckered,
     },
     {
       name: t('sidebar.manage_surveys', 'Kelola Survei'),
       path: '/admin/surveys',
-      icon: ClipboardList,
+      icon: Archive,
     },
     {
       name: t('sidebar.manage_users', 'Manajemen Pengguna'),
       path: '/admin/respondents',
-      icon: Users,
+      icon: TreeStructure,
     },
   ]
 
@@ -76,7 +84,7 @@ const AdminSidebar = () => {
                   }`
                 }
               >
-                <Icon size={16} className="shrink-0 opacity-80" />
+                <Icon size={22} weight="regular" className="shrink-0 opacity-80" />
                 {item.name}
               </NavLink>
             )
@@ -90,7 +98,7 @@ const AdminSidebar = () => {
         <div className="mb-5 flex items-center gap-1">
           {/* Profile Avatar */}
           <div className="flex h-14 w-14 items-center justify-center">
-            <UserCircle2 size={30} className="text-white" />
+            <UserCircle size={30} weight="regular" className="text-white" />
           </div>
 
           {/* User Detail */}
@@ -106,7 +114,7 @@ const AdminSidebar = () => {
           onClick={toggleLanguage}
           className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-light-grey/20 px-5 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-light-grey/10"
         >
-          <Globe size={15} />
+          <Globe size={22} weight="regular" />
           <span>{i18n.language === 'id' ? 'English' : 'Indonesia'}</span>
         </button>
 
@@ -116,7 +124,7 @@ const AdminSidebar = () => {
           onClick={handleLogout}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-oren-muda px-5 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-[#C9683B]"
         >
-          <LogOut size={15} />
+          <SignOut size={22} weight="regular" />
           <span>{t('sidebar.logout', 'Keluar')}</span>
         </button>
       </div>
