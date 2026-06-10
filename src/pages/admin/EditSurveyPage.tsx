@@ -474,16 +474,18 @@ export default function EditSurveyPage() {
     if ((count ?? 0) > 0) {
       setTypeChangeWarning({ questionId, newType })
     } else {
+      const isNewChoiceType = CHOICE_TYPES.includes(newType)
       setEditingQuestion((prev) =>
-        prev ? { ...prev, type: newType, optionsText: '' } : prev,
+        prev ? { ...prev, type: newType, optionsText: isNewChoiceType ? 'Pilihan 1' : '' } : prev,
       )
     }
   }
 
   function confirmTypeChange() {
     if (!typeChangeWarning || !editingQuestion) return
+    const isNewChoiceType = CHOICE_TYPES.includes(typeChangeWarning.newType)
     setEditingQuestion((prev) =>
-      prev ? { ...prev, type: typeChangeWarning.newType, optionsText: '' } : prev,
+      prev ? { ...prev, type: typeChangeWarning.newType, optionsText: isNewChoiceType ? 'Pilihan 1' : '' } : prev,
     )
     setTypeChangeWarning(null)
   }
@@ -519,15 +521,21 @@ export default function EditSurveyPage() {
     }
   }, [debouncedEditingQuestion])
 
-  async function saveQuestionAuto(editedQ: EditQuestionState) {
+  async function saveQuestionAuto(editedQ: EditQuestionState): Promise<boolean> {
     const trimmedText = editedQ.text.trim()
-    if (!trimmedText) return
+    if (!trimmedText) {
+      toast.error('Teks pertanyaan wajib diisi.')
+      return false
+    }
 
     const trimmedDescription = editedQ.description.trim() || null
     const isChoiceType = CHOICE_TYPES.includes(editedQ.type)
     const options = isChoiceType ? stringToOptions(editedQ.optionsText) : null
     
-    if (isChoiceType && (!options || options.length === 0)) return
+    if (isChoiceType && (!options || options.length === 0)) {
+      toast.error('Pilihan jawaban wajib diisi (minimal satu).')
+      return false
+    }
 
     const branchingLogic =
       editedQ.type === 'dual_likert'
@@ -556,6 +564,7 @@ export default function EditSurveyPage() {
     if (updateError) {
       setSaveStatus('error')
       toast.error(updateError.message)
+      return false
     } else {
       setSections((prev) =>
         prev.map((s) => ({
@@ -577,11 +586,42 @@ export default function EditSurveyPage() {
       )
       setSaveStatus('saved')
       setTimeout(() => setSaveStatus('idle'), 2000)
+      return true
     }
   }
 
-  function handleFinishEditQuestion(e: FormEvent) {
+  async function handleFinishEditQuestion(e: FormEvent) {
     e.preventDefault()
+    if (editingQuestion) {
+      // Cari pertanyaan asli
+      let original: QuestionRow | undefined
+      for (const s of sections) {
+        const found = s.questions.find(q => q.id === editingQuestion.questionId)
+        if (found) {
+          original = found
+          break
+        }
+      }
+      
+      if (original) {
+        const isChoiceType = CHOICE_TYPES.includes(editingQuestion.type)
+        const oldOptionsText = optionsToString(original.options)
+        
+        if (
+          original.question_text !== editingQuestion.text ||
+          original.description !== (editingQuestion.description || null) ||
+          original.question_type !== editingQuestion.type ||
+          original.is_required !== editingQuestion.required ||
+          (isChoiceType && oldOptionsText !== editingQuestion.optionsText)
+        ) {
+          // Simpan langsung dan tunggu status keberhasilan
+          const success = await saveQuestionAuto(editingQuestion)
+          if (!success) {
+            return // Jangan tutup form jika ada error/validasi gagal
+          }
+        }
+      }
+    }
     setEditingQuestion(null)
   }
 
@@ -907,13 +947,13 @@ export default function EditSurveyPage() {
                       <div key={question.id} className="px-5 py-4">
                         {isEditingThis ? (
                           <form onSubmit={(e) => void handleFinishEditQuestion(e)} className="space-y-4">
-                            <div className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr_0.5fr]">
-                              <div className="space-y-2">
+                            <div className="grid gap-4 sm:grid-cols-[1fr_auto_auto_auto]">
+                              <div className="space-y-2 flex-1">
                                 <input
                                   type="text"
                                   value={editingQuestion.text}
                                   onChange={(e) => setEditingQuestion((prev) => prev ? { ...prev, text: e.target.value } : prev)}
-                                  className="w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10"
+                                  className="w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10 h-[48px]"
                                 />
                                 <input
                                   type="text"
@@ -923,19 +963,56 @@ export default function EditSurveyPage() {
                                   className="w-full rounded-xl border border-light-grey bg-white px-4 py-2 text-xs text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10"
                                 />
                               </div>
-                              <select
-                                value={editingQuestion.type}
-                                onChange={(e) => void handleTypeChange(question.id, e.target.value as QuestionType)}
-                                className="w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10"
-                              >
-                                {(Object.keys(QUESTION_TYPE_LABELS) as QuestionType[]).map((type) => (
-                                  <option key={type} value={type}>{QUESTION_TYPE_LABELS[type]}</option>
-                                ))}
-                              </select>
-                              <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-oren-muda px-4 text-xs font-semibold text-white transition hover:brightness-110 active:scale-95">
-                                <Save size={14} /> Selesai
-                              </button>
+                              <label className="block">
+                                <select
+                                  value={editingQuestion.type}
+                                  onChange={(e) => void handleTypeChange(question.id, e.target.value as QuestionType)}
+                                  className="h-[48px] rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10"
+                                >
+                                  {(Object.keys(QUESTION_TYPE_LABELS) as QuestionType[]).map((type) => (
+                                    <option key={type} value={type}>{QUESTION_TYPE_LABELS[type]}</option>
+                                  ))}
+                                </select>
+                              </label>
+                              <div className="flex items-end">
+                                <label className="flex cursor-pointer select-none items-center gap-2 rounded-xl border border-light-grey bg-white px-4 py-3 text-sm font-medium text-ash w-full h-[48px]">
+                                  <input
+                                    type="checkbox"
+                                    checked={editingQuestion.required}
+                                    onChange={(e) =>
+                                      setEditingQuestion((prev) =>
+                                        prev ? { ...prev, required: e.target.checked } : prev,
+                                      )
+                                    }
+                                    className="h-4 w-4 text-navy"
+                                  />
+                                  Wajib
+                                </label>
+                              </div>
+                              <div className="flex items-end gap-2">
+                                <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-oren-muda px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 active:scale-95 h-[48px]">
+                                  <Save size={14} /> Selesai
+                                </button>
+                              </div>
                             </div>
+
+                            {CHOICE_TYPES.includes(editingQuestion.type) && (
+                              <label className="block text-sm font-medium text-ash">
+                                Pilihan Jawaban{' '}
+                                <span className="text-ash/50">(pisahkan dengan koma)</span>
+                                <input
+                                  type="text"
+                                  value={editingQuestion.optionsText}
+                                  onChange={(e) =>
+                                    setEditingQuestion((prev) =>
+                                      prev ? { ...prev, optionsText: e.target.value } : prev,
+                                    )
+                                  }
+                                  placeholder="Contoh: Sangat Puas, Cukup Puas, Tidak Puas"
+                                  className="mt-2 w-full rounded-xl border border-light-grey bg-white px-4 py-3 text-sm text-ash outline-none transition focus:border-oren focus:ring-2 focus:ring-oren/10"
+                                />
+                              </label>
+                            )}
                           </form>
                         ) : (
                           /* ── Tampilan pertanyaan normal ── */
@@ -1125,7 +1202,7 @@ export default function EditSurveyPage() {
                       <button
                         type="button"
                         onClick={() => startAddQuestion(section.id)}
-                        className="inline-flex items-center gap-2 text-sm font-semibold text-ash/50 transition hover:text-oren"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-light-grey bg-white px-5 py-3.5 text-sm font-semibold text-ash/60 transition hover:border-oren hover:bg-oren/5 hover:text-oren cursor-pointer shadow-sm"
                       >
                         <Plus size={15} />
                         Tambah Pertanyaan
