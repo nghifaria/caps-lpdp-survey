@@ -89,13 +89,6 @@ function SignUpPage() {
 
         {/* Form Container */}
         <div className="relative z-10 w-full max-w-md">
-          {/* Logo */}
-          <div className="mb-8 flex items-center justify-center">
-            <div className="flex h-16 w-40 items-center justify-center overflow-hidden rounded-3xl bg-white/15 px-3 ring-1 ring-white/20">
-              <img src="/logo_lpdp.png" alt="LPDP" className="h-full w-full object-contain" />
-            </div>
-          </div>
-
           <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.35em] text-[#242428]/80">
             Awardee Registration
           </p>
