@@ -5,6 +5,16 @@ Aplikasi web komprehensif untuk mengelola dan mengisi survei/kuesioner kepuasan 
 Tautan Website:
 https://caps-lpdp-survey.vercel.app/
 
+Akun Demo:
+
+Role Awardee:
+email: awardee@gmail.com
+password: awardee1234
+
+Role Admin:
+email: admin3@gmail.com
+password: admin1234
+
 ## 🚀 Fitur Utama
 
 ### 👑 Untuk Admin
